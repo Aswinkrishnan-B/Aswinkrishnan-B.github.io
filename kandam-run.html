@@ -2,56 +2,73 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MH Arena – Kandam Run</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kandam Run – MH Arena</title>
   <style>
     body {
       background: black;
       color: lime;
       font-family: 'Press Start 2P', monospace;
-      overflow: hidden;
       text-align: center;
+      margin: 0;
+      padding: 0;
     }
     canvas {
       display: block;
-      margin: 20px auto;
+      margin: 10px auto;
       border: 3px solid lime;
       background-color: #111;
-    }
-    #characterSelect {
-      margin-top: 20px;
+      max-width: 100%;
     }
     .option {
-      display: inline-block;
-      margin: 10px;
+      padding: 10px;
+      margin: 5px;
+      background: black;
+      color: lime;
+      border: 2px solid lime;
+      font-family: 'Press Start 2P', monospace;
       cursor: pointer;
     }
-    .option img {
-      width: 64px;
-      height: 64px;
-      border: 2px solid lime;
-      border-radius: 10px;
+    .option:hover {
+      background: lime;
+      color: black;
     }
-    #musicControl {
-      margin-top: 10px;
+    #score {
+      margin: 10px;
+      display: none;
+    }
+    #retryBtn {
+      margin-top: 15px;
+      display: none;
+    }
+    @media (max-width: 600px) {
+      .option {
+        font-size: 12px;
+        padding: 8px;
+      }
     }
   </style>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
   <h1>Kandam Run 🍼💨</h1>
+
   <div id="characterSelect">
     <p>Select your Kandam:</p>
-    <div class="option" onclick="selectAvatar('kuttan')"><img src="kuttan.png" alt="Kuttan"></div>
-    <div class="option" onclick="selectAvatar('alok')"><img src="alok.png" alt="Alok"></div>
-    <div class="option" onclick="selectAvatar('darshan')"><img src="darshan.png" alt="Darshan"></div>
-    <div class="option" onclick="selectAvatar('prathyush')"><img src="prathyush.png" alt="Prathyush"></div>
+    <button class="option" onclick="selectAvatar('kuttan')">Kuttan</button>
+    <button class="option" onclick="selectAvatar('alok')">Alok</button>
+    <button class="option" onclick="selectAvatar('darshan')">Darshan</button>
+    <button class="option" onclick="selectAvatar('prathyush')">Prathyush</button>
   </div>
+
+  <p id="score">Score: 0</p>
 
   <canvas id="gameCanvas" width="800" height="300"></canvas>
 
+  <button id="retryBtn" class="option" onclick="retryGame()">🔁 Retry</button>
+
   <div id="musicControl">
-    <button onclick="toggleMusic()">🔊 Toggle Music</button>
+    <button class="option" onclick="toggleMusic()">🔊 Toggle Music</button>
   </div>
 
   <audio id="bgMusic" autoplay loop>
@@ -65,41 +82,71 @@
 
     let x = 50, y = 240, vy = 0, gravity = 1, jumpPower = -15;
     let isJumping = false;
-    let obstacleX = 800;
+    let score = 0;
+    let gameOver = false;
+    let obstacleSpeed = 5;
 
-    const avatars = {
-      kuttan: new Image(),
-      alok: new Image(),
-      darshan: new Image(),
-      prathyush: new Image()
+    let selectedColor = "lime";
+
+    const colors = {
+      kuttan: "lime",
+      alok: "orange",
+      darshan: "cyan",
+      prathyush: "magenta"
     };
 
-    avatars.kuttan.src = "kuttan.png";
-    avatars.alok.src = "alok.png";
-    avatars.darshan.src = "darshan.png";
-    avatars.prathyush.src = "prathyush.png";
-
-    let currentAvatar = avatars.kuttan;
-
     function selectAvatar(name) {
-      if (avatars[name]) {
-        currentAvatar = avatars[name];
+      selectedColor = colors[name] || "lime";
+      document.getElementById("characterSelect").style.display = "none";
+      document.getElementById("score").style.display = "block";
+    }
+
+    const obstacles = [
+      { x: 800, width: 20, height: 40 },
+      { x: 1200, width: 30, height: 30 },
+      { x: 1600, width: 25, height: 35 }
+    ];
+
+    function drawAvatar() {
+      ctx.fillStyle = selectedColor;
+      ctx.fillRect(x, y, 40, 40);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = "brown";
+      for (let obs of obstacles) {
+        ctx.fillRect(obs.x, 300 - obs.height, obs.width, obs.height);
       }
     }
 
-    function drawAvatar() {
-      ctx.drawImage(currentAvatar, x, y, 40, 40);
+    function updateObstacles() {
+      for (let obs of obstacles) {
+        obs.x -= obstacleSpeed;
+        if (obs.x < -obs.width) {
+          obs.x = Math.max(...obstacles.map(o => o.x)) + 400;
+          score += 10;
+          document.getElementById("score").innerText = "Score: " + score;
+        }
+
+        if (
+          x + 40 > obs.x && x < obs.x + obs.width &&
+          y + 40 > 300 - obs.height
+        ) {
+          triggerGameOver();
+        }
+      }
     }
 
-    function drawObstacle() {
-      ctx.fillStyle = "red";
-      ctx.fillRect(obstacleX, 240, 20, 40);
+    function triggerGameOver() {
+      gameOver = true;
+      document.getElementById("retryBtn").style.display = "inline-block";
     }
 
     function update() {
+      if (gameOver) return;
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Update player
       if (isJumping) {
         vy += gravity;
         y += vy;
@@ -110,27 +157,44 @@
         }
       }
 
-      // Obstacle movement
-      obstacleX -= 5;
-      if (obstacleX < -20) obstacleX = 800;
-
-      // Collision
-      if (x + 40 > obstacleX && x < obstacleX + 20 && y + 40 > 240) {
-        alert("💥 KANDAM OVER! Refresh to retry.");
-        document.location.reload();
-      }
-
+      updateObstacles();
       drawAvatar();
-      drawObstacle();
+      drawObstacles();
+
       requestAnimationFrame(update);
     }
 
-    document.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && !isJumping) {
+    function jump() {
+      if (!isJumping && !gameOver) {
         vy = jumpPower;
         isJumping = true;
       }
+    }
+
+    function retryGame() {
+      x = 50;
+      y = 240;
+      vy = 0;
+      isJumping = false;
+      score = 0;
+      gameOver = false;
+      obstacleSpeed = 5;
+
+      document.getElementById("score").innerText = "Score: 0";
+      document.getElementById("retryBtn").style.display = "none";
+
+      obstacles[0].x = 800;
+      obstacles[1].x = 1200;
+      obstacles[2].x = 1600;
+
+      update();
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space") jump();
     });
+
+    canvas.addEventListener("click", jump); // tap to jump
 
     function toggleMusic() {
       const music = document.getElementById("bgMusic");
@@ -142,6 +206,7 @@
     }
 
     window.onload = () => {
+      document.getElementById("score").style.display = "none";
       update();
     };
   </script>
