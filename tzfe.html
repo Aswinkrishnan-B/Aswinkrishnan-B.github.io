@@ -140,24 +140,44 @@
       return mat[0].map((_, i) => mat.map(row => row[i]).reverse());
     }
 
-    function move(direction) {
-      // direction: 0 = up, 1 = right, 2 = down, 3 = left
-      let rotated = [...grid.map(r => [...r])];
-      for (let i = 0; i < direction; i++) rotated = rotateClockwise(rotated);
+    function rotateCounterClockwise(mat) {
+      return mat[0].map((_, i) => mat.map(row => row[3 - i]));
+    }
 
+    function move(direction) {
+      // Clone grid
+      let newGrid = [...grid.map(r => [...r])];
+
+      // Rotate for easier row-based movement
+      if (direction === "up") {
+        newGrid = rotateCounterClockwise(newGrid);
+      } else if (direction === "down") {
+        newGrid = rotateClockwise(newGrid);
+      } else if (direction === "right") {
+        newGrid = newGrid.map(row => row.reverse());
+      }
+
+      // Move
       let moved = false;
-      rotated = rotated.map(row => {
+      newGrid = newGrid.map(row => {
         const newRow = slide(row);
-        if (JSON.stringify(newRow) !== JSON.stringify(row)) moved = true;
+        if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
         return newRow;
       });
 
-      for (let i = 0; i < (4 - direction) % 4; i++) rotated = rotateClockwise(rotated);
+      // Rotate back
+      if (direction === "up") {
+        newGrid = rotateClockwise(newGrid);
+      } else if (direction === "down") {
+        newGrid = rotateCounterClockwise(newGrid);
+      } else if (direction === "right") {
+        newGrid = newGrid.map(row => row.reverse());
+      }
 
       if (moved) {
         for (let r = 0; r < 4; r++) {
           for (let c = 0; c < 4; c++) {
-            grid[r][c] = rotated[r][c];
+            grid[r][c] = newGrid[r][c];
           }
         }
         addRandomTile();
@@ -165,18 +185,20 @@
       }
     }
 
+    // Key and button handlers
     document.addEventListener("keydown", e => {
-      if (e.key === "ArrowUp") move(0);
-      if (e.key === "ArrowRight") move(1);
-      if (e.key === "ArrowDown") move(2);
-      if (e.key === "ArrowLeft") move(3);
+      if (e.key === "ArrowUp") move("up");
+      if (e.key === "ArrowRight") move("right");
+      if (e.key === "ArrowDown") move("down");
+      if (e.key === "ArrowLeft") move("left");
     });
 
-    document.getElementById("up").onclick = () => move(0);
-    document.getElementById("right").onclick = () => move(1);
-    document.getElementById("down").onclick = () => move(2);
-    document.getElementById("left").onclick = () => move(3);
+    document.getElementById("up").onclick = () => move("up");
+    document.getElementById("right").onclick = () => move("right");
+    document.getElementById("down").onclick = () => move("down");
+    document.getElementById("left").onclick = () => move("left");
 
+    // Start game
     addRandomTile();
     addRandomTile();
     drawGrid();
