@@ -9,7 +9,7 @@
     body {
       margin: 0;
       font-family: 'Press Start 2P', cursive;
-      background: url('https://i.imgur.com/vybHeeg.png') center/cover no-repeat;
+      background: url('https://w0.peakpx.com/wallpaper/778/433/HD-wallpaper-retro-hex-window-70s-80s-amazing-cyberpunk-retro-tron-computer-game-mountains-retrowave-road-sun-sunset.jpg') center/cover no-repeat;
       color: lime;
       text-align: center;
     }
@@ -156,4 +156,64 @@
     }
 
     function rotateClockwise() {
-      board = board
+      board = board[0].map((_, i) => board.map(row => row[i]).reverse());
+    }
+
+    function rotateCounterClockwise() {
+      board = board[0].map((_, i) => board.map(row => row[row.length - 1 - i]));
+    }
+
+    function move(dir) {
+      let old = JSON.stringify(board);
+      for (let i = 0; i < { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]; i++) rotateClockwise();
+      for (let r = 0; r < 4; r++) board[r] = slide(board[r]);
+      for (let i = 0; i < (4 - { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]) % 4; i++) rotateClockwise();
+      if (JSON.stringify(board) !== old) {
+        addRandomTile();
+        update();
+      }
+    }
+
+    function update() {
+      drawBoard();
+      scoreEl.textContent = score;
+      if (getEmptyCells().length === 0 && !canMove()) {
+        alert("🧱 GAME OVER! Better luck next time!");
+      }
+    }
+
+    function canMove() {
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (r < 3 && board[r][c] === board[r + 1][c]) return true;
+          if (c < 3 && board[r][c] === board[r][c + 1]) return true;
+        }
+      }
+      return false;
+    }
+
+    function restartGame() {
+      score = 0;
+      createEmptyBoard();
+      addRandomTile();
+      addRandomTile();
+      update();
+    }
+
+    function shareResult() {
+      const result = `🏁 I scored ${score} in MH Arena 2048! Try beating me!`;
+      navigator.clipboard.writeText(result);
+      alert("📋 Copied your score to clipboard!");
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key === 'ArrowLeft') move('left');
+      if (e.key === 'ArrowRight') move('right');
+      if (e.key === 'ArrowUp') move('up');
+      if (e.key === 'ArrowDown') move('down');
+    });
+
+    restartGame();
+  </script>
+</body>
+</html>
