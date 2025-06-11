@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MH Arena – Kandam Run</title>
+  <style>
+    body {
+      background: black;
+      color: lime;
+      font-family: 'Press Start 2P', monospace;
+      overflow: hidden;
+      text-align: center;
+    }
+    canvas {
+      display: block;
+      margin: 20px auto;
+      border: 3px solid lime;
+      background-color: #111;
+    }
+    #characterSelect {
+      margin-top: 20px;
+    }
+    .option {
+      display: inline-block;
+      margin: 10px;
+      cursor: pointer;
+    }
+    .option img {
+      width: 64px;
+      height: 64px;
+      border: 2px solid lime;
+      border-radius: 10px;
+    }
+    audio {
+      display: none;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+  <h1>Kandam Run 🍼💨</h1>
+  <div id="characterSelect">
+    <p>Select your Kandam:</p>
+    <div class="option" onclick="selectAvatar('kuttan')"><img src="kuttan.png" alt="Kuttan"></div>
+    <div class="option" onclick="selectAvatar('alok')"><img src="alok.png" alt="Alok"></div>
+    <div class="option" onclick="selectAvatar('darshan')"><img src="darshan.png" alt="Darshan"></div>
+    <div class="option" onclick="selectAvatar('prathyush')"><img src="prathyush.png" alt="Prathyush"></div>
+  </div>
+  <canvas id="gameCanvas" width="800" height="300"></canvas>
+
+  <audio id="bgMusic" autoplay loop>
+    <source src="8bit-retro.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    let avatar = "kuttan";
+    let avatarImg = new Image();
+    avatarImg.src = "kuttan.png";
+
+    let x = 50, y = 240, vy = 0, gravity = 1, jumpPower = -15;
+    let isJumping = false;
+    let obstacleX = 800;
+
+    function selectAvatar(name) {
+      avatar = name;
+      avatarImg.src = name + ".png";
+    }
+
+    function drawAvatar() {
+      ctx.drawImage(avatarImg, x, y, 40, 40);
+    }
+
+    function drawObstacle() {
+      ctx.fillStyle = "red";
+      ctx.fillRect(obstacleX, 240, 20, 40);
+    }
+
+    function update() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update player
+      if (isJumping) {
+        vy += gravity;
+        y += vy;
+        if (y >= 240) {
+          y = 240;
+          vy = 0;
+          isJumping = false;
+        }
+      }
+
+      // Obstacle movement
+      obstacleX -= 5;
+      if (obstacleX < -20) obstacleX = 800;
+
+      // Collision
+      if (x + 40 > obstacleX && x < obstacleX + 20 && y + 40 > 240) {
+        alert("💥 KANDAM OVER! Refresh to retry.");
+        document.location.reload();
+      }
+
+      drawAvatar();
+      drawObstacle();
+      requestAnimationFrame(update);
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" && !isJumping) {
+        vy = jumpPower;
+        isJumping = true;
+      }
+    });
+
+    update();
+  </script>
+</body>
+</html>
