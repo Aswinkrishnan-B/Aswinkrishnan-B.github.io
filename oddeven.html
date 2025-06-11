@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Odd or Even Cricket Game</title>
+  <title>Arcade Cricket Game</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
@@ -49,13 +49,35 @@
       color: yellow;
       margin-top: 15px;
     }
+    .popup {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      color: yellow;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      font-size: 1.2rem;
+      padding: 20px;
+      text-align: center;
+      flex-direction: column;
+    }
+    .popup select, .popup button {
+      margin: 10px;
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
 
   <h1>🏏 Odd or Even Cricket 🕹️</h1>
-  <div class="scoreboard" id="status">You are Batting</div>
-  <div class="scoreboard" id="scores">Player: 0 | System: 0</div>
+  <div class="scoreboard" id="status">Waiting for toss...</div>
+  <div class="scoreboard" id="scores">Player: 0/0 (0 balls) | System: 0/0 (0 balls)</div>
 
   <div class="buttons">
     <button onclick="playTurn(1)">1</button>
@@ -69,60 +91,149 @@
   <div class="log" id="log"></div>
   <div class="result" id="result"></div>
 
+  <!-- Match Setup Popup -->
+  <div class="popup" id="setupPopup">
+    <h2>⚙️ Match Setup</h2>
+    <label>Choose Overs:
+      <select id="oversSelect">
+        <option value="1">1 Over</option>
+        <option value="2">2 Overs</option>
+        <option value="3">3 Overs</option>
+        <option value="4">4 Overs</option>
+        <option value="5">5 Overs</option>
+      </select>
+    </label>
+    <label>Choose Wickets:
+      <select id="wicketsSelect">
+        <option value="1">1 Wicket</option>
+        <option value="2" selected>2 Wickets</option>
+        <option value="3">3 Wickets</option>
+        <option value="4">4 Wickets</option>
+        <option value="5">5 Wickets</option>
+      </select>
+    </label>
+    <button onclick="startToss()">Proceed to Toss</button>
+  </div>
+
+  <!-- Toss Popup -->
+  <div class="popup hidden" id="tossPopup">
+    <h2>🪙 Toss Time</h2>
+    <p>Choose Heads or Tails</p>
+    <button onclick="toss('heads')">Heads</button>
+    <button onclick="toss('tails')">Tails</button>
+  </div>
+
+  <!-- Bat/Bowl Choice Popup -->
+  <div class="popup hidden" id="batBowlPopup">
+    <p>You won the toss! Choose:</p>
+    <button onclick="setBatting(true)">Bat First</button>
+    <button onclick="setBatting(false)">Bowl First</button>
+  </div>
+
+  <!-- Inning Transition Popup -->
+  <div class="popup hidden" id="popup"><p></p><button onclick="closePopup()">Continue</button></div>
+
   <script>
-    let isPlayerBatting = true;
-    let playerScore = 0;
-    let systemScore = 0;
-    let target = null;
-    let gameEnded = false;
+    // Game settings
+    let maxOvers = 1, maxBalls = 6, maxWickets = 2;
+    let isPlayerBatting = true, gameEnded = false, target = null;
+    let playerScore = 0, playerWickets = 0, playerBalls = 0;
+    let systemScore = 0, systemWickets = 0, systemBalls = 0;
+
+    const status = document.getElementById('status');
+    const scores = document.getElementById('scores');
+    const log = document.getElementById('log');
+    const result = document.getElementById('result');
+
+    function startToss() {
+      maxOvers = parseInt(document.getElementById('oversSelect').value);
+      maxBalls = maxOvers * 6;
+      maxWickets = parseInt(document.getElementById('wicketsSelect').value);
+      document.getElementById('setupPopup').classList.add('hidden');
+      document.getElementById('tossPopup').classList.remove('hidden');
+    }
+
+    function toss(playerCall) {
+      const tossResult = Math.random() < 0.5 ? 'heads' : 'tails';
+      if (tossResult === playerCall) {
+        document.getElementById('tossPopup').classList.add('hidden');
+        document.getElementById('batBowlPopup').classList.remove('hidden');
+      } else {
+        isPlayerBatting = Math.random() < 0.5;
+        document.getElementById('tossPopup').classList.add('hidden');
+        showPopup(`System won the toss and chose to ${isPlayerBatting ? "bowl" : "bat"} first.`);
+      }
+    }
+
+    function setBatting(choice) {
+      isPlayerBatting = choice;
+      document.getElementById('batBowlPopup').classList.add('hidden');
+      showPopup(`You chose to ${isPlayerBatting ? "bat" : "bowl"} first.`);
+    }
+
+    function showPopup(message) {
+      const popup = document.getElementById('popup');
+      popup.querySelector('p').innerHTML = message;
+      popup.classList.remove('hidden');
+    }
+
+    function closePopup() {
+      document.getElementById('popup').classList.add('hidden');
+      updateUI();
+    }
 
     function getRandom() {
       return Math.floor(Math.random() * 6) + 1;
     }
 
     function playTurn(playerChoice) {
-      if (gameEnded) return;
+      if (gameEnded || document.querySelector('.popup:not(.hidden)')) return;
 
       const systemChoice = getRandom();
-      let log = document.getElementById('log');
-      let status = document.getElementById('status');
-      let scores = document.getElementById('scores');
-      let result = document.getElementById('result');
 
       if (isPlayerBatting) {
+        playerBalls++;
         log.innerHTML = `You chose ${playerChoice}, System chose ${systemChoice}`;
         if (playerChoice === systemChoice) {
-          isPlayerBatting = false;
-          target = playerScore + 1;
-          log.innerHTML += "<br><strong>You're OUT!</strong>";
-          status.innerText = "System is Batting";
+          playerWickets++;
+          log.innerHTML += `<br><strong>You're OUT! (${playerWickets}/${maxWickets})</strong>`;
         } else {
           playerScore += playerChoice;
         }
+
+        if (playerWickets >= maxWickets || playerBalls >= maxBalls) {
+          target = playerScore + 1;
+          isPlayerBatting = false;
+          showPopup(`Your innings over! 🎯 Target for system: ${target}`);
+        }
+
       } else {
+        systemBalls++;
         log.innerHTML = `System chose ${systemChoice}, You chose ${playerChoice}`;
         if (playerChoice === systemChoice) {
-          log.innerHTML += "<br><strong>System is OUT!</strong>";
-          if (systemScore < target - 1) {
-            result.innerText = "🎉 You Win!";
-          } else if (systemScore === target - 1) {
-            result.innerText = "🤝 It's a Tie!";
-          } else {
-            result.innerText = "💔 You Lose!";
-          }
-          gameEnded = true;
-          status.innerText = "Game Over";
+          systemWickets++;
+          log.innerHTML += `<br><strong>System is OUT! (${systemWickets}/${maxWickets})</strong>`;
         } else {
           systemScore += systemChoice;
-          if (systemScore >= target) {
-            result.innerText = "💔 You Lose!";
-            gameEnded = true;
-            status.innerText = "Game Over";
-          }
+        }
+
+        if (systemScore >= target) {
+          result.innerText = "💔 You Lose!";
+          gameEnded = true;
+        } else if (systemWickets >= maxWickets || systemBalls >= maxBalls) {
+          gameEnded = true;
+          if (systemScore < target - 1) result.innerText = "🎉 You Win!";
+          else if (systemScore === target - 1) result.innerText = "🤝 It's a Tie!";
+          else result.innerText = "💔 You Lose!";
         }
       }
 
-      scores.innerText = `Player: ${playerScore} | System: ${systemScore}`;
+      updateUI();
+    }
+
+    function updateUI() {
+      scores.innerText = `Player: ${playerScore}/${playerWickets} (${playerBalls} balls) | System: ${systemScore}/${systemWickets} (${systemBalls} balls)`;
+      status.innerText = gameEnded ? "Game Over" : isPlayerBatting ? "You're Batting" : "System is Batting";
     }
   </script>
 </body>
