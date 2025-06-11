@@ -3,217 +3,179 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MH Arena – 2048</title>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
+  <title>2048 Retro</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
     body {
-      margin: 0;
       font-family: 'Press Start 2P', cursive;
-      background: url('https://w0.peakpx.com/wallpaper/778/433/HD-wallpaper-retro-hex-window-70s-80s-amazing-cyberpunk-retro-tron-computer-game-mountains-retrowave-road-sun-sunset.jpg') center/cover no-repeat;
-      color: lime;
-      text-align: center;
+      background-color: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
     }
 
     h1 {
-      margin: 20px 0;
-      text-shadow: 2px 2px #000;
+      color: #ffcc00;
+      font-size: 2rem;
+      margin: 20px;
     }
 
-    .game-container {
-      width: 90vmin;
-      max-width: 400px;
-      margin: auto;
-      background: rgba(0,0,0,0.7);
-      padding: 10px;
-      border: 3px solid lime;
-    }
-
-    .grid {
+    #game-container {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(4, 80px);
+      grid-template-rows: repeat(4, 80px);
       gap: 5px;
-      margin: 10px 0;
-    }
-
-    .cell {
-      background: #111;
-      color: lime;
-      font-size: 3vmin;
-      padding: 20% 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      border: 2px solid lime;
-    }
-
-    .score, .controls {
-      margin: 10px;
-    }
-
-    button {
-      background: black;
-      color: lime;
-      border: 2px solid lime;
+      background: #333;
       padding: 10px;
-      font-family: inherit;
+      border: 4px solid #ffcc00;
+    }
+
+    .tile {
+      width: 80px;
+      height: 80px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #fff;
+      border: 2px solid #444;
+    }
+
+    .tile-2 { background: #6666ff; }
+    .tile-4 { background: #6666aa; }
+    .tile-8 { background: #aa66aa; }
+    .tile-16 { background: #ff66aa; }
+    .tile-32 { background: #ff6699; }
+    .tile-64 { background: #ff9966; }
+    .tile-128 { background: #ffff66; color: #000; }
+    .tile-256 { background: #ccff66; color: #000; }
+    .tile-512 { background: #66ff66; color: #000; }
+    .tile-1024 { background: #66ffff; color: #000; }
+    .tile-2048 { background: #ffcc00; color: #000; }
+
+    #controls {
+      margin-top: 20px;
+      display: grid;
+      grid-template-areas:
+        ". up ."
+        "left down right";
+      gap: 10px;
+    }
+
+    .btn {
+      width: 60px;
+      height: 60px;
+      background: #444;
+      color: #fff;
+      border: 2px solid #888;
+      font-size: 20px;
       cursor: pointer;
     }
 
-    .dpad {
-      display: grid;
-      grid-template-areas:
-        ".    up    ."
-        "left null right"
-        ".   down   .";
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
-      margin: 20px auto;
-      width: 150px;
+    .btn:active {
+      background: #666;
     }
 
-    .dpad button {
-      padding: 15px;
-    }
-
-    .dpad .up    { grid-area: up;    }
-    .dpad .down  { grid-area: down;  }
-    .dpad .left  { grid-area: left;  }
-    .dpad .right { grid-area: right; }
-
-    @media (max-width: 600px) {
-      .cell {
-        font-size: 5vmin;
-      }
-    }
+    #up { grid-area: up; }
+    #down { grid-area: down; }
+    #left { grid-area: left; }
+    #right { grid-area: right; }
   </style>
 </head>
 <body>
-  <h1>MH Arena – 2048</h1>
-  <div class="game-container">
-    <div class="score">Score: <span id="score">0</span></div>
-    <div class="grid" id="grid"></div>
+  <h1>2048 Retro</h1>
+  <div id="game-container"></div>
 
-    <div class="dpad">
-      <button class="up" onclick="move('up')">⬆️</button>
-      <button class="left" onclick="move('left')">⬅️</button>
-      <button class="right" onclick="move('right')">➡️</button>
-      <button class="down" onclick="move('down')">⬇️</button>
-    </div>
-
-    <div class="controls">
-      <button onclick="restartGame()">🔁 Restart</button>
-      <button onclick="shareResult()">📤 Share</button>
-    </div>
+  <div id="controls">
+    <button class="btn" id="up">↑</button>
+    <button class="btn" id="left">←</button>
+    <button class="btn" id="down">↓</button>
+    <button class="btn" id="right">→</button>
   </div>
 
   <script>
-    const grid = document.getElementById('grid');
-    const scoreEl = document.getElementById('score');
-    let board = [];
-    let score = 0;
+    const grid = Array(4).fill().map(() => Array(4).fill(0));
+    const container = document.getElementById("game-container");
 
-    function createEmptyBoard() {
-      board = Array.from({ length: 4 }, () => Array(4).fill(0));
-    }
-
-    function drawBoard() {
-      grid.innerHTML = '';
-      board.flat().forEach(val => {
-        const cell = document.createElement('div');
-        cell.className = 'cell';
-        cell.textContent = val ? val : '';
-        grid.appendChild(cell);
+    function drawGrid() {
+      container.innerHTML = '';
+      grid.flat().forEach(value => {
+        const tile = document.createElement("div");
+        tile.className = "tile" + (value ? ` tile-${value}` : '');
+        tile.textContent = value || '';
+        container.appendChild(tile);
       });
     }
 
-    function getEmptyCells() {
-      const empty = [];
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          if (board[r][c] === 0) empty.push([r, c]);
-        }
-      }
-      return empty;
-    }
-
     function addRandomTile() {
-      const empty = getEmptyCells();
+      const empty = [];
+      grid.forEach((row, r) =>
+        row.forEach((v, c) => {
+          if (!v) empty.push([r, c]);
+        })
+      );
       if (empty.length === 0) return;
       const [r, c] = empty[Math.floor(Math.random() * empty.length)];
-      board[r][c] = Math.random() > 0.1 ? 2 : 4;
+      grid[r][c] = Math.random() > 0.1 ? 2 : 4;
     }
 
     function slide(row) {
-      let arr = row.filter(val => val);
-      for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] === arr[i + 1]) {
-          arr[i] *= 2;
-          score += arr[i];
-          arr[i + 1] = 0;
+      row = row.filter(v => v);
+      for (let i = 0; i < row.length - 1; i++) {
+        if (row[i] === row[i + 1]) {
+          row[i] *= 2;
+          row[i + 1] = 0;
         }
       }
-      return [...arr.filter(val => val), ...Array(4 - arr.filter(val => val).length).fill(0)];
+      return row.filter(v => v).concat(Array(4 - row.filter(v => v).length).fill(0));
     }
 
-    function rotateClockwise() {
-      board = board[0].map((_, i) => board.map(row => row[i]).reverse());
-    }
-
-    function rotateCounterClockwise() {
-      board = board[0].map((_, i) => board.map(row => row[row.length - 1 - i]));
+    function rotateClockwise(mat) {
+      return mat[0].map((_, i) => mat.map(row => row[i]).reverse());
     }
 
     function move(dir) {
-      let old = JSON.stringify(board);
-      for (let i = 0; i < { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]; i++) rotateClockwise();
-      for (let r = 0; r < 4; r++) board[r] = slide(board[r]);
-      for (let i = 0; i < (4 - { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]) % 4; i++) rotateClockwise();
-      if (JSON.stringify(board) !== old) {
-        addRandomTile();
-        update();
-      }
-    }
-
-    function update() {
-      drawBoard();
-      scoreEl.textContent = score;
-      if (getEmptyCells().length === 0 && !canMove()) {
-        alert("🧱 GAME OVER! Better luck next time!");
-      }
-    }
-
-    function canMove() {
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          if (r < 3 && board[r][c] === board[r + 1][c]) return true;
-          if (c < 3 && board[r][c] === board[r][c + 1]) return true;
+      let rotated = [...grid.map(r => [...r])];
+      for (let i = 0; i < dir; i++) rotated = rotateClockwise(rotated);
+      let moved = false;
+      rotated = rotated.map(row => {
+        const newRow = slide(row);
+        if (JSON.stringify(newRow) !== JSON.stringify(row)) moved = true;
+        return newRow;
+      });
+      for (let i = 0; i < (4 - dir) % 4; i++) rotated = rotateClockwise(rotated);
+      if (moved) {
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 4; c++) {
+            grid[r][c] = rotated[r][c];
+          }
         }
+        addRandomTile();
+        drawGrid();
       }
-      return false;
     }
 
-    function restartGame() {
-      score = 0;
-      createEmptyBoard();
-      addRandomTile();
-      addRandomTile();
-      update();
-    }
-
-    function shareResult() {
-      const result = `🏁 I scored ${score} in MH Arena 2048! Try beating me!`;
-      navigator.clipboard.writeText(result);
-      alert("📋 Copied your score to clipboard!");
-    }
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowLeft') move('left');
-      if (e.key === 'ArrowRight') move('right');
-      if (e.key === 'ArrowUp') move('up');
-      if (e.key === 'ArrowDown') move('down');
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") move(0);
+      if (e.key === "ArrowRight") move(1);
+      if (e.key === "ArrowDown") move(2);
+      if (e.key === "ArrowLeft") move(3);
     });
 
-    restartGame();
+    document.getElementById("up").onclick = () => move(0);
+    document.getElementById("right").onclick = () => move(1);
+    document.getElementById("down").onclick = () => move(2);
+    document.getElementById("left").onclick = () => move(3);
+
+    addRandomTile();
+    addRandomTile();
+    drawGrid();
   </script>
 </body>
 </html>
