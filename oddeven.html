@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Arcade Cricket Game (beta)</title>
+  <title>Odd or Even Cricket</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
@@ -19,18 +19,26 @@
     }
     .scoreboard {
       margin: 10px 0;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
+      background: #111;
+      padding: 10px;
+      border: 2px solid lime;
+      display: inline-block;
+      width: 100%;
+      max-width: 400px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px lime;
     }
     .buttons {
-      display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      margin: 20px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+      gap: 10px;
+      max-width: 300px;
+      margin: 20px auto;
     }
     .buttons button {
-      width: 60px;
+      width: 100%;
       height: 60px;
-      margin: 10px;
       font-size: 1.5rem;
       background-color: lime;
       border: 2px solid #0f0;
@@ -39,7 +47,7 @@
       border-radius: 8px;
       box-shadow: 0 0 8px #0f0;
     }
-    .log {
+    .log, .target, .innings {
       margin-top: 20px;
       font-size: 1rem;
       min-height: 60px;
@@ -71,13 +79,27 @@
       border-radius: 6px;
     }
     .hidden { display: none; }
+
+    #restartBtn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: yellow;
+      color: black;
+      font-weight: bold;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
 
   <h1>🏏 Odd or Even Cricket 🕹️</h1>
   <div class="scoreboard" id="status">Waiting for toss...</div>
-  <div class="scoreboard" id="scores">Player: 0/0 (0 balls) | System: 0/0 (0 balls)</div>
+  <div class="scoreboard" id="scores">Player: 0/0 (0 balls) | Computer Thala: 0/0 (0 balls)</div>
+  <div class="scoreboard" id="targetDisplay"></div>
+  <div class="innings" id="inningsDisplay"></div>
 
   <div class="buttons">
     <button onclick="playTurn(1)">1</button>
@@ -90,6 +112,7 @@
 
   <div class="log" id="log"></div>
   <div class="result" id="result"></div>
+  <button id="restartBtn" class="hidden" onclick="location.reload()">🔁 Play Again</button>
 
   <!-- Match Setup Popup -->
   <div class="popup" id="setupPopup">
@@ -100,7 +123,7 @@
         <option value="2">2 Overs</option>
         <option value="3">3 Overs</option>
         <option value="4">4 Overs</option>
-        <option value="5">5 Overs</option>
+        <option value="5" selected>5 Overs</option>
       </select>
     </label>
     <label>Choose Wickets:
@@ -134,9 +157,8 @@
   <div class="popup hidden" id="popup"><p></p><button onclick="closePopup()">Continue</button></div>
 
   <script>
-    // Game settings
     let maxOvers = 1, maxBalls = 6, maxWickets = 2;
-    let isPlayerBatting = true, gameEnded = false, target = null;
+    let isPlayerBatting = true, gameEnded = false, target = null, isFirstInningsOver = false;
     let playerScore = 0, playerWickets = 0, playerBalls = 0;
     let systemScore = 0, systemWickets = 0, systemBalls = 0;
 
@@ -144,6 +166,8 @@
     const scores = document.getElementById('scores');
     const log = document.getElementById('log');
     const result = document.getElementById('result');
+    const targetDisplay = document.getElementById('targetDisplay');
+    const inningsDisplay = document.getElementById('inningsDisplay');
 
     function startToss() {
       maxOvers = parseInt(document.getElementById('oversSelect').value);
@@ -161,7 +185,7 @@
       } else {
         isPlayerBatting = Math.random() < 0.5;
         document.getElementById('tossPopup').classList.add('hidden');
-        showPopup(`System won the toss and chose to ${isPlayerBatting ? "bowl" : "bat"} first.`);
+        showPopup(`Computer Thala won the toss and chose to ${isPlayerBatting ? "bowl" : "bat"} first.`);
       }
     }
 
@@ -193,7 +217,8 @@
 
       if (isPlayerBatting) {
         playerBalls++;
-        log.innerHTML = `You chose ${playerChoice}, System chose ${systemChoice}`;
+        log.innerHTML = `You chose ${playerChoice}, Computer Thala chose ${systemChoice}`;
+
         if (playerChoice === systemChoice) {
           playerWickets++;
           log.innerHTML += `<br><strong>You're OUT! (${playerWickets}/${maxWickets})</strong>`;
@@ -202,39 +227,73 @@
         }
 
         if (playerWickets >= maxWickets || playerBalls >= maxBalls) {
-          target = playerScore + 1;
-          isPlayerBatting = false;
-          showPopup(`Your innings over! 🎯 Target for system: ${target}`);
+          if (!isFirstInningsOver) {
+            target = playerScore + 1;
+            isPlayerBatting = false;
+            isFirstInningsOver = true;
+            showPopup(`Your innings is over! 🎯 Target for Computer Thala: ${target}`);
+          } else {
+            finishGame();
+          }
         }
 
       } else {
         systemBalls++;
-        log.innerHTML = `System chose ${systemChoice}, You chose ${playerChoice}`;
+        log.innerHTML = `Computer Thala chose ${systemChoice}, You chose ${playerChoice}`;
+
         if (playerChoice === systemChoice) {
           systemWickets++;
-          log.innerHTML += `<br><strong>System is OUT! (${systemWickets}/${maxWickets})</strong>`;
+          log.innerHTML += `<br><strong>Computer Thala is OUT! (${systemWickets}/${maxWickets})</strong>`;
         } else {
           systemScore += systemChoice;
         }
 
-        if (systemScore >= target) {
-          result.innerText = "💔 You Lose!";
-          gameEnded = true;
-        } else if (systemWickets >= maxWickets || systemBalls >= maxBalls) {
-          gameEnded = true;
-          if (systemScore < target - 1) result.innerText = "🎉 You Win!";
-          else if (systemScore === target - 1) result.innerText = "🤝 It's a Tie!";
-          else result.innerText = "💔 You Lose!";
+        if (!isFirstInningsOver && (systemWickets >= maxWickets || systemBalls >= maxBalls)) {
+          target = systemScore + 1;
+          isPlayerBatting = true;
+          isFirstInningsOver = true;
+          showPopup(`Computer Thala's innings is over! 🎯 Target for You: ${target}`);
+        } else if (isFirstInningsOver) {
+          if (systemScore >= target) {
+            result.innerText = "💔 You Lose!";
+            gameEnded = true;
+          } else if (systemWickets >= maxWickets || systemBalls >= maxBalls) {
+            finishGame();
+
+          }
         }
       }
-
       updateUI();
     }
 
+    function finishGame() {
+      gameEnded = true;
+      let finalResult = "";
+      if (playerScore > systemScore) {
+        finalResult = "🏆 You Win!";
+      } else if (playerScore < systemScore) {
+        finalResult = "💔 You Lose!";
+      } else {
+        finalResult = "🤝 It's a Tie!";
+      }
+      result.innerText = finalResult;
+      document.getElementById('restartBtn').classList.remove('hidden');
+    }
+
     function updateUI() {
-      scores.innerText = `Player: ${playerScore}/${playerWickets} (${playerBalls} balls) | System: ${systemScore}/${systemWickets} (${systemBalls} balls)`;
-      status.innerText = gameEnded ? "Game Over" : isPlayerBatting ? "You're Batting" : "System is Batting";
+      scores.innerText = `Player: ${playerScore}/${playerWickets} (${playerBalls} balls) | Computer Thala: ${systemScore}/${systemWickets} (${systemBalls} balls)`;
+      if (target !== null) {
+        targetDisplay.innerText = `🎯 Target: ${target}`;
+      } else {
+        targetDisplay.innerText = "";
+      }
+      inningsDisplay.innerText = isPlayerBatting
+        ? (isFirstInningsOver ? "🟢 2nd Innings - You're Batting" : "🟢 1st Innings - You're Batting")
+        : (isFirstInningsOver ? "🔵 2nd Innings - Computer Thala Batting" : "🔵 1st Innings - Computer Thala Batting");
+
+      status.innerText = gameEnded ? "🎮 Game Over" : (isPlayerBatting ? "🏏 Your Turn to Bat" : "🎯 Your Turn to Bowl");
     }
   </script>
+
 </body>
 </html>
