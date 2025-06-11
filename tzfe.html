@@ -1,38 +1,185 @@
-function move(direction) {
-  // direction: 0 = up, 1 = right, 2 = down, 3 = left
-  let rotated = [...grid.map(r => [...r])];
-  for (let i = 0; i < direction; i++) rotated = rotateClockwise(rotated);
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>2048 Retro</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
-  let moved = false;
-  rotated = rotated.map(row => {
-    const newRow = slide(row);
-    if (JSON.stringify(newRow) !== JSON.stringify(row)) moved = true;
-    return newRow;
-  });
+    body {
+      font-family: 'Press Start 2P', cursive;
+      background-color: #111;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+    }
 
-  for (let i = 0; i < (4 - direction) % 4; i++) rotated = rotateClockwise(rotated);
+    h1 {
+      color: #ffcc00;
+      font-size: 2rem;
+      margin: 20px;
+    }
 
-  if (moved) {
-    for (let r = 0; r < 4; r++) {
-      for (let c = 0; c < 4; c++) {
-        grid[r][c] = rotated[r][c];
+    #game-container {
+      display: grid;
+      grid-template-columns: repeat(4, 80px);
+      grid-template-rows: repeat(4, 80px);
+      gap: 5px;
+      background: #333;
+      padding: 10px;
+      border: 4px solid #ffcc00;
+    }
+
+    .tile {
+      width: 80px;
+      height: 80px;
+      background: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #fff;
+      border: 2px solid #444;
+    }
+
+    .tile-2 { background: #6666ff; }
+    .tile-4 { background: #6666aa; }
+    .tile-8 { background: #aa66aa; }
+    .tile-16 { background: #ff66aa; }
+    .tile-32 { background: #ff6699; }
+    .tile-64 { background: #ff9966; }
+    .tile-128 { background: #ffff66; color: #000; }
+    .tile-256 { background: #ccff66; color: #000; }
+    .tile-512 { background: #66ff66; color: #000; }
+    .tile-1024 { background: #66ffff; color: #000; }
+    .tile-2048 { background: #ffcc00; color: #000; }
+
+    #controls {
+      margin-top: 20px;
+      display: grid;
+      grid-template-areas:
+        ". up ."
+        "left down right";
+      gap: 10px;
+    }
+
+    .btn {
+      width: 60px;
+      height: 60px;
+      background: #444;
+      color: #fff;
+      border: 2px solid #888;
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    .btn:active {
+      background: #666;
+    }
+
+    #up { grid-area: up; }
+    #down { grid-area: down; }
+    #left { grid-area: left; }
+    #right { grid-area: right; }
+  </style>
+</head>
+<body>
+  <h1>2048 Retro</h1>
+  <div id="game-container"></div>
+
+  <div id="controls">
+    <button class="btn" id="up">↑</button>
+    <button class="btn" id="left">←</button>
+    <button class="btn" id="down">↓</button>
+    <button class="btn" id="right">→</button>
+  </div>
+
+  <script>
+    const grid = Array(4).fill().map(() => Array(4).fill(0));
+    const container = document.getElementById("game-container");
+
+    function drawGrid() {
+      container.innerHTML = '';
+      grid.flat().forEach(value => {
+        const tile = document.createElement("div");
+        tile.className = "tile" + (value ? ` tile-${value}` : '');
+        tile.textContent = value || '';
+        container.appendChild(tile);
+      });
+    }
+
+    function addRandomTile() {
+      const empty = [];
+      grid.forEach((row, r) =>
+        row.forEach((v, c) => {
+          if (!v) empty.push([r, c]);
+        })
+      );
+      if (empty.length === 0) return;
+      const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+      grid[r][c] = Math.random() > 0.1 ? 2 : 4;
+    }
+
+    function slide(row) {
+      row = row.filter(v => v);
+      for (let i = 0; i < row.length - 1; i++) {
+        if (row[i] === row[i + 1]) {
+          row[i] *= 2;
+          row[i + 1] = 0;
+        }
+      }
+      return row.filter(v => v).concat(Array(4 - row.filter(v => v).length).fill(0));
+    }
+
+    function rotateClockwise(mat) {
+      return mat[0].map((_, i) => mat.map(row => row[i]).reverse());
+    }
+
+    function move(direction) {
+      // direction: 0 = up, 1 = right, 2 = down, 3 = left
+      let rotated = [...grid.map(r => [...r])];
+      for (let i = 0; i < direction; i++) rotated = rotateClockwise(rotated);
+
+      let moved = false;
+      rotated = rotated.map(row => {
+        const newRow = slide(row);
+        if (JSON.stringify(newRow) !== JSON.stringify(row)) moved = true;
+        return newRow;
+      });
+
+      for (let i = 0; i < (4 - direction) % 4; i++) rotated = rotateClockwise(rotated);
+
+      if (moved) {
+        for (let r = 0; r < 4; r++) {
+          for (let c = 0; c < 4; c++) {
+            grid[r][c] = rotated[r][c];
+          }
+        }
+        addRandomTile();
+        drawGrid();
       }
     }
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "ArrowUp") move(0);
+      if (e.key === "ArrowRight") move(1);
+      if (e.key === "ArrowDown") move(2);
+      if (e.key === "ArrowLeft") move(3);
+    });
+
+    document.getElementById("up").onclick = () => move(0);
+    document.getElementById("right").onclick = () => move(1);
+    document.getElementById("down").onclick = () => move(2);
+    document.getElementById("left").onclick = () => move(3);
+
+    addRandomTile();
     addRandomTile();
     drawGrid();
-  }
-}
-
-// Updated arrow key mapping
-document.addEventListener("keydown", e => {
-  if (e.key === "ArrowUp") move(0);
-  if (e.key === "ArrowRight") move(1);
-  if (e.key === "ArrowDown") move(2);
-  if (e.key === "ArrowLeft") move(3);
-});
-
-// Updated on-screen button mapping
-document.getElementById("up").onclick = () => move(0);
-document.getElementById("right").onclick = () => move(1);
-document.getElementById("down").onclick = () => move(2);
-document.getElementById("left").onclick = () => move(3);
+  </script>
+</body>
+</html>
