@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>2048 Game</title>
+  <style>
+    body {
+      background: #faf8ef;
+      font-family: 'Arial', sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      font-size: 48px;
+      margin: 20px 0 10px;
+    }
+
+    #score {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(4, 100px);
+      grid-template-rows: repeat(4, 100px);
+      gap: 10px;
+      justify-content: center;
+      margin: 0 auto;
+    }
+
+    .tile {
+      background: #cdc1b4;
+      font-size: 28px;
+      line-height: 100px;
+      text-align: center;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+
+    .tile[data-value="2"] { background: #eee4da; }
+    .tile[data-value="4"] { background: #ede0c8; }
+    .tile[data-value="8"] { background: #f2b179; }
+    .tile[data-value="16"] { background: #f59563; }
+    .tile[data-value="32"] { background: #f67c5f; }
+    .tile[data-value="64"] { background: #f65e3b; }
+    .tile[data-value="128"] { background: #edcf72; }
+    .tile[data-value="256"] { background: #edcc61; }
+    .tile[data-value="512"] { background: #edc850; }
+    .tile[data-value="1024"] { background: #edc53f; }
+    .tile[data-value="2048"] { background: #edc22e; }
+  </style>
+</head>
+<body>
+
+<h1>2048</h1>
+<div id="score">Score: 0</div>
+<div id="board"></div>
+
+<script>
+  const board = document.getElementById("board");
+  const scoreDisplay = document.getElementById("score");
+  let score = 0;
+  let tiles = [];
+
+  function initBoard() {
+    tiles = Array(4).fill(null).map(() => Array(4).fill(0));
+    placeRandom();
+    placeRandom();
+    updateBoard();
+  }
+
+  function updateBoard() {
+    board.innerHTML = "";
+    tiles.forEach(row => {
+      row.forEach(val => {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        tile.textContent = val > 0 ? val : "";
+        tile.dataset.value = val;
+        board.appendChild(tile);
+      });
+    });
+    scoreDisplay.textContent = `Score: ${score}`;
+  }
+
+  function placeRandom() {
+    const empty = [];
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4; j++)
+        if (tiles[i][j] === 0) empty.push([i, j]);
+
+    if (empty.length === 0) return;
+    const [i, j] = empty[Math.floor(Math.random() * empty.length)];
+    tiles[i][j] = Math.random() < 0.9 ? 2 : 4;
+  }
+
+  function slide(row) {
+    let arr = row.filter(val => val);
+    for (let i = 0; i < arr.length - 1; i++) {
+      if (arr[i] === arr[i + 1]) {
+        arr[i] *= 2;
+        score += arr[i];
+        arr[i + 1] = 0;
+      }
+    }
+    return arr.filter(val => val).concat(Array(4 - arr.filter(val => val).length).fill(0));
+  }
+
+  function rotateLeft(mat) {
+    return mat[0].map((_, i) => mat.map(row => row[3 - i]));
+  }
+
+  function rotateRight(mat) {
+    return mat[0].map((_, i) => mat.map(row => row[i]).reverse());
+  }
+
+  function move(dir) {
+    let moved = false;
+    let newTiles = tiles.map(row => [...row]);
+
+    if (dir === "left") {
+      newTiles = newTiles.map(slide);
+    } else if (dir === "right") {
+      newTiles = newTiles.map(row => slide(row.reverse()).reverse());
+    } else if (dir === "up") {
+      newTiles = rotateLeft(newTiles);
+      newTiles = newTiles.map(slide);
+      newTiles = rotateRight(newTiles);
+    } else if (dir === "down") {
+      newTiles = rotateRight(newTiles);
+      newTiles = newTiles.map(slide);
+      newTiles = rotateLeft(newTiles);
+    }
+
+    if (JSON.stringify(newTiles) !== JSON.stringify(tiles)) {
+      tiles = newTiles;
+      placeRandom();
+      moved = true;
+    }
+
+    updateBoard();
+    if (isGameOver()) alert("Game Over!");
+  }
+
+  function isGameOver() {
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4; j++) {
+        if (tiles[i][j] === 0) return false;
+        if (j < 3 && tiles[i][j] === tiles[i][j + 1]) return false;
+        if (i < 3 && tiles[i][j] === tiles[i + 1][j]) return false;
+      }
+    return true;
+  }
+
+  document.addEventListener("keydown", e => {
+    if (e.key === "ArrowLeft") move("left");
+    else if (e.key === "ArrowRight") move("right");
+    else if (e.key === "ArrowUp") move("up");
+    else if (e.key === "ArrowDown") move("down");
+  });
+
+  // Touch support for mobile
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener("touchstart", e => {
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  });
+
+  document.addEventListener("touchend", e => {
+    let dx = e.changedTouches[0].screenX - touchStartX;
+    let dy = e.changedTouches[0].screenY - touchStartY;
+    if (Math.abs(dx) > Math.abs(dy)) {
+      move(dx > 0 ? "right" : "left");
+    } else {
+      move(dy > 0 ? "down" : "up");
+    }
+  });
+
+  initBoard();
+</script>
+
+</body>
+</html>
