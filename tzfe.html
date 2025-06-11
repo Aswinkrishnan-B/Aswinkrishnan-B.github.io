@@ -1,241 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>MH Arena – 2048</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet"/>
   <style>
     body {
-      font-family: 'Press Start 2P', monospace;
-      background: url('https://w0.peakpx.com/wallpaper/778/433/HD-wallpaper-retro-hex-window-70s-80s-amazing-cyberpunk-retro-tron-computer-game-mountains-retrowave-road-sun-sunset.jpg') repeat;
-      color: #fff;
+      margin: 0;
+      font-family: 'Press Start 2P', cursive;
+      background: url('https://i.imgur.com/vybHeeg.png') center/cover no-repeat;
+      color: lime;
       text-align: center;
-      padding: 20px;
-      overflow-x: hidden;
     }
+
     h1 {
-      color: #ffcc00;
+      margin: 20px 0;
       text-shadow: 2px 2px #000;
     }
-    #game {
-      width: 320px;
-      height: 320px;
-      margin: 20px auto;
-      display: grid;
-      grid-template: repeat(4, 1fr) / repeat(4, 1fr);
-      gap: 5px;
-      background: rgba(0, 0, 0, 0.5);
-      padding: 5px;
-      border: 4px solid #ffcc00;
-    }
-    .tile {
-      background: rgba(255,255,255,0.1);
-      font-size: 18px;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border: 2px solid #ffcc00;
-    }
-    .tile[data-value='2']    { background: #f44336; }
-    .tile[data-value='4']    { background: #e91e63; }
-    .tile[data-value='8']    { background: #9c27b0; }
-    .tile[data-value='16']   { background: #673ab7; }
-    .tile[data-value='32']   { background: #3f51b5; }
-    .tile[data-value='64']   { background: #2196f3; }
-    .tile[data-value='128']  { background: #03a9f4; }
-    .tile[data-value='256']  { background: #00bcd4; }
-    .tile[data-value='512']  { background: #009688; }
-    .tile[data-value='1024'] { background: #4caf50; }
-    .tile[data-value='2048'] { background: #8bc34a; color: black; }
 
-    #score, #message {
-      font-size: 14px;
-      color: #ffcc00;
-      margin-top: 10px;
-    }
-    #shareBtn {
-      margin-top: 10px;
+    .game-container {
+      width: 90vmin;
+      max-width: 400px;
+      margin: auto;
+      background: rgba(0,0,0,0.7);
       padding: 10px;
-      font-size: 10px;
-      font-family: 'Press Start 2P', monospace;
+      border: 3px solid lime;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 5px;
+      margin: 10px 0;
+    }
+
+    .cell {
+      background: #111;
+      color: lime;
+      font-size: 3vmin;
+      padding: 20% 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 2px solid lime;
+    }
+
+    .score, .controls {
+      margin: 10px;
+    }
+
+    button {
       background: black;
-      border: 2px solid #ffcc00;
-      color: #ffcc00;
+      color: lime;
+      border: 2px solid lime;
+      padding: 10px;
+      font-family: inherit;
       cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+      .cell {
+        font-size: 5vmin;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>🧱 MH Arena – 2048 🕹️</h1>
-  <div id="game"></div>
-  <div id="score">Score: <span id="scoreValue">0</span></div>
-  <div id="message"></div>
-  <button id="shareBtn" onclick="shareScore()">📤 Share Your Results</button>
+  <h1>MH Arena – 2048</h1>
+  <div class="game-container">
+    <div class="score">Score: <span id="score">0</span></div>
+    <div class="grid" id="grid"></div>
+    <div class="controls">
+      <button onclick="restartGame()">🔁 Restart</button>
+      <button onclick="shareResult()">📤 Share</button>
+    </div>
+  </div>
 
   <script>
-    const game = document.getElementById('game');
-    const scoreDisplay = document.getElementById('scoreValue');
-    const message = document.getElementById('message');
-    let board = Array(4).fill().map(() => Array(4).fill(0));
+    const grid = document.getElementById('grid');
+    const scoreEl = document.getElementById('score');
+    let board = [];
     let score = 0;
-    let gameOver = false;
+
+    function createEmptyBoard() {
+      board = Array.from({ length: 4 }, () => Array(4).fill(0));
+    }
 
     function drawBoard() {
-      game.innerHTML = '';
-      for (let row of board) {
-        for (let val of row) {
-          const tile = document.createElement('div');
-          tile.className = 'tile';
-          if (val !== 0) {
-            tile.textContent = val;
-            tile.dataset.value = val;
-          }
-          game.appendChild(tile);
+      grid.innerHTML = '';
+      board.flat().forEach(val => {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        cell.textContent = val ? val : '';
+        grid.appendChild(cell);
+      });
+    }
+
+    function getEmptyCells() {
+      const empty = [];
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) empty.push([r, c]);
         }
       }
-      scoreDisplay.textContent = score;
+      return empty;
     }
 
     function addRandomTile() {
-      let empty = [];
-      board.forEach((row, i) => row.forEach((val, j) => {
-        if (val === 0) empty.push([i, j]);
-      }));
+      const empty = getEmptyCells();
       if (empty.length === 0) return;
-      const [i, j] = empty[Math.floor(Math.random() * empty.length)];
-      board[i][j] = Math.random() > 0.9 ? 4 : 2;
+      const [r, c] = empty[Math.floor(Math.random() * empty.length)];
+      board[r][c] = Math.random() > 0.1 ? 2 : 4;
     }
 
     function slide(row) {
       let arr = row.filter(val => val);
       for (let i = 0; i < arr.length - 1; i++) {
-        if (arr[i] === arr[i+1]) {
+        if (arr[i] === arr[i + 1]) {
           arr[i] *= 2;
           score += arr[i];
-          arr[i+1] = 0;
+          arr[i + 1] = 0;
         }
       }
-      return arr.filter(val => val).concat(Array(4 - arr.filter(val => val).length).fill(0));
+      return [...arr.filter(val => val), ...Array(4 - arr.filter(val => val).length).fill(0)];
     }
 
-    function rotateCW() {
-      let newBoard = Array(4).fill().map(() => Array(4).fill(0));
-      for (let i = 0; i < 4; i++)
-        for (let j = 0; j < 4; j++)
-          newBoard[j][3 - i] = board[i][j];
-      board = newBoard;
+    function rotateClockwise() {
+      board = board[0].map((_, i) => board.map(row => row[i]).reverse());
     }
 
-    function moveLeft() {
-      board = board.map(slide);
+    function rotateCounterClockwise() {
+      board = board[0].map((_, i) => board.map(row => row[row.length - 1 - i]));
     }
 
     function move(dir) {
-      if (gameOver) return;
       let old = JSON.stringify(board);
-      for (let i = 0; i < dir; i++) rotateCW();
-      moveLeft();
-      for (let i = 0; i < (4 - dir) % 4; i++) rotateCW();
-      if (JSON.stringify(board) !== old) addRandomTile();
-      drawBoard();
-      checkGameStatus();
+      for (let i = 0; i < { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]; i++) rotateClockwise();
+      for (let r = 0; r < 4; r++) board[r] = slide(board[r]);
+      for (let i = 0; i < (4 - { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]) % 4; i++) rotateClockwise();
+      if (JSON.stringify(board) !== old) {
+        addRandomTile();
+        update();
+      }
     }
 
-    function checkGameStatus() {
-      if (board.flat().includes(2048)) {
-        message.textContent = "🎉 Victory! You reached 2048!";
-        gameOver = true;
-      } else if (!canMove()) {
-        message.textContent = "😢 Better luck next time!";
-        gameOver = true;
+    function update() {
+      drawBoard();
+      scoreEl.textContent = score;
+      if (getEmptyCells().length === 0 && !canMove()) {
+        alert("Game Over! 😵");
       }
     }
 
     function canMove() {
-      for (let i = 0; i < 4; i++)
-        for (let j = 0; j < 4; j++) {
-          if (board[i][j] === 0) return true;
-          if (j < 3 && board[i][j] === board[i][j+1]) return true;
-          if (i < 3 && board[i][j] === board[i+1][j]) return true;
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (r < 3 && board[r][c] === board[r + 1][c]) return true;
+          if (c < 3 && board[r][c] === board[r][c + 1]) return true;
         }
+      }
       return false;
     }
 
-    function shareScore() {
-      let result = `I scored ${score} in MH Arena 2048!\n`;
-      result += message.textContent || '';
-      navigator.clipboard.writeText(result).then(() => {
-        alert("Score copied to clipboard! Share it with your friends.");
-      });
+    function restartGame() {
+      score = 0;
+      createEmptyBoard();
+      addRandomTile();
+      addRandomTile();
+      update();
     }
 
-    // Keyboard
+    function shareResult() {
+      const result = `🏁 I scored ${score} in MH Arena 2048! Try beating me!`;
+      navigator.clipboard.writeText(result);
+      alert("Copied your score to clipboard!");
+    }
+
     document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowLeft') move(0);
-      if (e.key === 'ArrowUp') move(1);
-      if (e.key === 'ArrowRight') move(2);
-      if (e.key === 'ArrowDown') move(3);
+      if (e.key === 'ArrowLeft') move('left');
+      if (e.key === 'ArrowRight') move('right');
+      if (e.key === 'ArrowUp') move('up');
+      if (e.key === 'ArrowDown') move('down');
     });
 
-    // Touch support
-    let touchStartX, touchStartY;
-    document.addEventListener("touchstart", e => {
-      if (e.touches.length > 0) {
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-      }
-    });
+    // Mobile swipe
+    let xStart = null;
+    let yStart = null;
+    document.addEventListener('touchstart', e => {
+      const touch = e.touches[0];
+      xStart = touch.clientX;
+      yStart = touch.clientY;
+    }, false);
 
-    document.addEventListener("touchend", e => {
-      let dx = e.changedTouches[0].clientX - touchStartX;
-      let dy = e.changedTouches[0].clientY - touchStartY;
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 30) move(2);
-        else if (dx < -30) move(0);
+    document.addEventListener('touchend', e => {
+      if (!xStart || !yStart) return;
+      const xEnd = e.changedTouches[0].clientX;
+      const yEnd = e.changedTouches[0].clientY;
+      const xDiff = xEnd - xStart;
+      const yDiff = yEnd - yStart;
+
+      if (Math.abs(xDiff) > Math.abs(yDiff)) {
+        if (xDiff > 0) move('right'); else move('left');
       } else {
-        if (dy > 30) move(3);
-        else if (dy < -30) move(1);
+        if (yDiff > 0) move('down'); else move('up');
       }
-    });
+      xStart = yStart = null;
+    }, false);
 
-    addRandomTile();
-    addRandomTile();
-    drawBoard();
-    <script>
-  // Your existing game logic code here...
-
-  // ADD THIS inside the same <script> tag (at the bottom is best):
-
-  let touchStartX = 0;
-  let touchStartY = 0;
-
-  // Prevent pull-to-refresh and improve swipe responsiveness
-  document.addEventListener('touchstart', e => {
-    if (e.touches.length > 0) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }
-  }, { passive: false });
-
-  document.addEventListener('touchmove', e => {
-    e.preventDefault(); // Prevent scroll/pull-to-refresh
-  }, { passive: false });
-
-  document.addEventListener('touchend', e => {
-    let dx = e.changedTouches[0].clientX - touchStartX;
-    let dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > Math.abs(dy)) {
-      if (dx > 30) move(2);        // Right
-      else if (dx < -30) move(0);  // Left
-    } else {
-      if (dy > 30) move(3);        // Down
-      else if (dy < -30) move(1);  // Up
-    }
-  }, { passive: false });
-</script>
-
+    restartGame();
   </script>
 </body>
 </html>
