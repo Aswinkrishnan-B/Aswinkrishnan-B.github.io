@@ -1,152 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Kandam Run – MH Arena</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MH Arena – Kandam Run</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     body {
+      margin: 0;
       background: black;
       color: lime;
       font-family: 'Press Start 2P', monospace;
+      overflow-x: hidden;
       text-align: center;
-      margin: 0;
-      padding: 0;
+    }
+    h1, p {
+      margin: 10px;
     }
     canvas {
       display: block;
-      margin: 10px auto;
-      border: 3px solid lime;
+      margin: auto;
       background-color: #111;
-      max-width: 100%;
+      border: 3px solid lime;
+    }
+    #characterSelect {
+      margin-top: 10px;
     }
     .option {
-      padding: 10px;
-      margin: 5px;
-      background: black;
-      color: lime;
-      border: 2px solid lime;
-      font-family: 'Press Start 2P', monospace;
-      cursor: pointer;
-    }
-    .option:hover {
-      background: lime;
-      color: black;
-    }
-    #score {
+      display: inline-block;
+      padding: 5px 10px;
       margin: 10px;
-      display: none;
+      border: 2px solid lime;
+      border-radius: 5px;
+      cursor: pointer;
+      color: white;
     }
-    #retryBtn {
+    #scoreBoard {
+      margin-top: 10px;
+    }
+    #controls {
       margin-top: 15px;
-      display: none;
     }
-    @media (max-width: 600px) {
-      .option {
-        font-size: 12px;
-        padding: 8px;
-      }
+    button {
+      font-family: 'Press Start 2P', monospace;
+      padding: 5px 10px;
+      margin: 5px;
     }
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h1>Kandam Run 🍼💨</h1>
 
+  <h1>KANDAM RUN 🍼💨</h1>
   <div id="characterSelect">
-    <p>Select your Kandam:</p>
-    <button class="option" onclick="selectAvatar('kuttan')">Kuttan</button>
-    <button class="option" onclick="selectAvatar('alok')">Alok</button>
-    <button class="option" onclick="selectAvatar('darshan')">Darshan</button>
-    <button class="option" onclick="selectAvatar('prathyush')">Prathyush</button>
+    <p>Select Your Kandah:</p>
+    <div class="option" onclick="startGame('Kuttan', 'red')">Kuttan</div>
+    <div class="option" onclick="startGame('Alok', 'blue')">Alok</div>
+    <div class="option" onclick="startGame('Darshan', 'orange')">Darshan</div>
+    <div class="option" onclick="startGame('Prathyush', 'green')">Prathyush</div>
   </div>
 
-  <p id="score">Score: 0</p>
+  <div id="scoreBoard"><p>Score: <span id="score">0</span></p></div>
 
   <canvas id="gameCanvas" width="800" height="300"></canvas>
 
-  <button id="retryBtn" class="option" onclick="retryGame()">🔁 Retry</button>
-
-  <div id="musicControl">
-    <button class="option" onclick="toggleMusic()">🔊 Toggle Music</button>
+  <div id="controls">
+    <button onclick="toggleMusic()">🔊 Toggle Music</button>
+    <button onclick="resetGame()">🔁 Retry</button>
   </div>
 
-  <audio id="bgMusic" autoplay loop>
+  <audio id="bgMusic" loop>
     <source src="8bit-retro.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
   </audio>
 
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
+    const music = document.getElementById("bgMusic");
 
+    let characterColor = "red";
+    let gameStarted = false;
     let x = 50, y = 240, vy = 0, gravity = 1, jumpPower = -15;
     let isJumping = false;
+    let obstacles = [];
     let score = 0;
     let gameOver = false;
-    let obstacleSpeed = 5;
 
-    let selectedColor = "lime";
-
-    const colors = {
-      kuttan: "lime",
-      alok: "orange",
-      darshan: "cyan",
-      prathyush: "magenta"
-    };
-
-    function selectAvatar(name) {
-      selectedColor = colors[name] || "lime";
-      document.getElementById("characterSelect").style.display = "none";
-      document.getElementById("score").style.display = "block";
+    function drawRunner() {
+      ctx.fillStyle = characterColor;
+      ctx.beginPath();
+      ctx.arc(x + 20, y + 20, 20, 0, Math.PI * 2); // head
+      ctx.fill();
+      ctx.fillRect(x + 10, y + 35, 20, 30); // body
     }
 
-    const obstacles = [
-      { x: 800, width: 20, height: 40 },
-      { x: 1200, width: 30, height: 30 },
-      { x: 1600, width: 25, height: 35 }
-    ];
-
-    function drawAvatar() {
-      ctx.fillStyle = selectedColor;
-      ctx.fillRect(x, y, 40, 40);
-    }
-
-    function drawObstacles() {
-      ctx.fillStyle = "brown";
-      for (let obs of obstacles) {
-        ctx.fillRect(obs.x, 300 - obs.height, obs.width, obs.height);
-      }
-    }
-
-    function updateObstacles() {
-      for (let obs of obstacles) {
-        obs.x -= obstacleSpeed;
-        if (obs.x < -obs.width) {
-          obs.x = Math.max(...obstacles.map(o => o.x)) + 400;
-          score += 10;
-          document.getElementById("score").innerText = "Score: " + score;
-        }
-
-        if (
-          x + 40 > obs.x && x < obs.x + obs.width &&
-          y + 40 > 300 - obs.height
-        ) {
-          triggerGameOver();
-        }
-      }
-    }
-
-    function triggerGameOver() {
-      gameOver = true;
-      document.getElementById("retryBtn").style.display = "inline-block";
+    function drawObstacle(ob) {
+      ctx.fillStyle = "sienna";
+      ctx.beginPath();
+      ctx.moveTo(ob.x, ob.y + 40);
+      ctx.lineTo(ob.x + 10, ob.y + 10);
+      ctx.lineTo(ob.x + 20, ob.y + 40);
+      ctx.closePath();
+      ctx.fill();
     }
 
     function update() {
-      if (gameOver) return;
+      if (!gameStarted || gameOver) return;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+      // Gravity
       if (isJumping) {
         vy += gravity;
         y += vy;
@@ -157,58 +119,78 @@
         }
       }
 
-      updateObstacles();
-      drawAvatar();
-      drawObstacles();
+      // Obstacles
+      for (let ob of obstacles) {
+        ob.x -= 6;
+        drawObstacle(ob);
+      }
 
+      // Remove old obstacles
+      if (obstacles.length > 0 && obstacles[0].x < -20) {
+        obstacles.shift();
+        score += 1;
+        document.getElementById("score").textContent = score;
+      }
+
+      // Add new obstacles
+      if (Math.random() < 0.02) {
+        obstacles.push({ x: 800, y: 240 });
+      }
+
+      // Collision check
+      for (let ob of obstacles) {
+        if (x + 30 > ob.x && x < ob.x + 20 && y + 40 > ob.y) {
+          alert("💥 KANDAM OVER! Score: " + score);
+          gameOver = true;
+        }
+      }
+
+      drawRunner();
       requestAnimationFrame(update);
     }
 
-    function jump() {
-      if (!isJumping && !gameOver) {
-        vy = jumpPower;
-        isJumping = true;
-      }
-    }
-
-    function retryGame() {
+    function startGame(name, color) {
+      characterColor = color;
+      document.getElementById("characterSelect").style.display = "none";
+      music.play();
+      gameStarted = true;
+      gameOver = false;
+      obstacles = [];
+      score = 0;
       x = 50;
       y = 240;
-      vy = 0;
-      isJumping = false;
-      score = 0;
-      gameOver = false;
-      obstacleSpeed = 5;
-
-      document.getElementById("score").innerText = "Score: 0";
-      document.getElementById("retryBtn").style.display = "none";
-
-      obstacles[0].x = 800;
-      obstacles[1].x = 1200;
-      obstacles[2].x = 1600;
-
       update();
+    }
+
+    function resetGame() {
+      document.location.reload();
+    }
+
+    function toggleMusic() {
+      if (music.paused) music.play();
+      else music.pause();
     }
 
     document.addEventListener("keydown", (e) => {
-      if (e.code === "Space") jump();
+      if (e.code === "Space" && !isJumping && gameStarted) {
+        vy = jumpPower;
+        isJumping = true;
+      }
     });
 
-    canvas.addEventListener("click", jump); // tap to jump
-
-    function toggleMusic() {
-      const music = document.getElementById("bgMusic");
-      if (music.paused) {
-        music.play();
-      } else {
-        music.pause();
+    document.addEventListener("click", () => {
+      if (!isJumping && gameStarted) {
+        vy = jumpPower;
+        isJumping = true;
       }
-    }
+    });
 
-    window.onload = () => {
-      document.getElementById("score").style.display = "none";
-      update();
-    };
+    document.addEventListener("touchstart", () => {
+      if (!isJumping && gameStarted) {
+        vy = jumpPower;
+        isJumping = true;
+      }
+    });
   </script>
 </body>
 </html>
