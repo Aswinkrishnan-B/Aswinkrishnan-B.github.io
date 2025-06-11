@@ -74,6 +74,31 @@
   <div id="message"></div>
   <button id="shareBtn" onclick="shareScore()">📤 Share Your Results</button>
 
+// Prevent pull-to-refresh and improve swipe responsiveness
+  document.addEventListener('touchstart', e => {
+  if (e.touches.length > 0) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }
+}, { passive: false });
+
+document.addEventListener('touchmove', e => {
+  e.preventDefault(); // Prevent scroll/pull-to-refresh
+}, { passive: false });
+
+document.addEventListener('touchend', e => {
+  let dx = e.changedTouches[0].clientX - touchStartX;
+  let dy = e.changedTouches[0].clientY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    if (dx > 30) move(2);        // Swipe Right
+    else if (dx < -30) move(0);  // Swipe Left
+  } else {
+    if (dy > 30) move(3);        // Swipe Down
+    else if (dy < -30) move(1);  // Swipe Up
+  }
+}, { passive: false });
+
+
   <script>
     const game = document.getElementById('game');
     const scoreDisplay = document.getElementById('scoreValue');
