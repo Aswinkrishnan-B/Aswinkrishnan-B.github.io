@@ -7,6 +7,10 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: 'Press Start 2P', cursive;
       background-color: #111;
@@ -14,39 +18,45 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      min-height: 100vh;
+      justify-content: flex-start;
+      padding: 1rem;
       margin: 0;
+      min-height: 100vh;
     }
 
     h1 {
       color: #ffcc00;
-      font-size: 2rem;
-      margin: 20px;
+      font-size: 1.5rem;
+      text-align: center;
+      margin: 1rem 0;
     }
 
     #game-container {
       display: grid;
-      grid-template-columns: repeat(4, 80px);
-      grid-template-rows: repeat(4, 80px);
-      gap: 5px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
       background: #333;
-      padding: 10px;
+      padding: 4px;
+      width: 90vw;
+      max-width: 400px;
+      aspect-ratio: 1 / 1;
       border: 4px solid #ffcc00;
+      touch-action: manipulation;
     }
 
     .tile {
-      width: 80px;
-      height: 80px;
       background: #222;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: min(5vw, 1.2rem);
       color: #fff;
-      border: 2px solid #444;
+      border: 1px solid #444;
+      width: 100%;
+      aspect-ratio: 1 / 1;
     }
 
+    /* Tile Colors */
     .tile-2 { background: #6666ff; }
     .tile-4 { background: #6666aa; }
     .tile-8 { background: #aa66aa; }
@@ -60,22 +70,25 @@
     .tile-2048 { background: #ffcc00; color: #000; }
 
     #controls {
-      margin-top: 20px;
+      margin-top: 1.5rem;
       display: grid;
       grid-template-areas:
         ". up ."
         "left down right";
       gap: 10px;
+      width: 100%;
+      max-width: 300px;
     }
 
     .btn {
-      width: 60px;
-      height: 60px;
       background: #444;
       color: #fff;
       border: 2px solid #888;
-      font-size: 20px;
-      cursor: pointer;
+      font-size: 1.5rem;
+      padding: 0.75rem;
+      border-radius: 8px;
+      width: 100%;
+      height: 60px;
     }
 
     .btn:active {
@@ -86,6 +99,21 @@
     #down { grid-area: down; }
     #left { grid-area: left; }
     #right { grid-area: right; }
+
+    @media (min-width: 600px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .tile {
+        font-size: 1.2rem;
+      }
+
+      .btn {
+        font-size: 1.75rem;
+        height: 70px;
+      }
+    }
   </style>
 </head>
 <body>
@@ -145,10 +173,8 @@
     }
 
     function move(direction) {
-      // Clone grid
       let newGrid = [...grid.map(r => [...r])];
 
-      // Rotate for easier row-based movement
       if (direction === "up") {
         newGrid = rotateCounterClockwise(newGrid);
       } else if (direction === "down") {
@@ -157,7 +183,6 @@
         newGrid = newGrid.map(row => row.reverse());
       }
 
-      // Move
       let moved = false;
       newGrid = newGrid.map(row => {
         const newRow = slide(row);
@@ -165,7 +190,6 @@
         return newRow;
       });
 
-      // Rotate back
       if (direction === "up") {
         newGrid = rotateClockwise(newGrid);
       } else if (direction === "down") {
@@ -185,7 +209,6 @@
       }
     }
 
-    // Key and button handlers
     document.addEventListener("keydown", e => {
       if (e.key === "ArrowUp") move("up");
       if (e.key === "ArrowRight") move("right");
@@ -198,7 +221,6 @@
     document.getElementById("down").onclick = () => move("down");
     document.getElementById("left").onclick = () => move("left");
 
-    // Start game
     addRandomTile();
     addRandomTile();
     drawGrid();
