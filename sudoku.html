@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Sudoku Game</title>
   <style>
     body {
@@ -20,7 +20,7 @@
       height: 40px;
       text-align: center;
       font-size: 18px;
-      position: relative;
+      padding: 0;
     }
     input {
       width: 100%;
@@ -39,7 +39,7 @@
       background-color: #fdd;
     }
     button {
-      margin: 20px 10px;
+      margin: 15px 5px;
       padding: 10px 20px;
       font-size: 16px;
     }
@@ -51,51 +51,54 @@
   <div>
     <button onclick="checkSolution()">Check</button>
     <button onclick="showSolution()">I Give Up</button>
-    <button onclick="location.reload()">New Game</button>
+    <button onclick="newGame()">New Game</button>
   </div>
 
   <script>
-    // Sudoku generator from https://github.com/robatron/sudoku.js (simplified)
-    function generateSudoku() {
+    const SIZE = 9;
+    const board = document.getElementById("sudoku-board");
+    let inputs = [];
+    let currentSolution = [];
+
+    function generateSudokuGrid() {
       const sudoku = window.sudoku;
       const puzzle = sudoku.makepuzzle();
       const solution = sudoku.solvepuzzle(puzzle);
       return { puzzle, solution };
     }
 
-    const board = document.getElementById("sudoku-board");
-    const SIZE = 9;
-    const inputs = [];
-    let currentSolution = [];
-
     function createBoard(puzzle, solution) {
       board.innerHTML = "";
-      inputs.length = 0;
+      inputs = [];
       currentSolution = solution;
 
       for (let row = 0; row < SIZE; row++) {
         const tr = document.createElement("tr");
-        inputs[row] = [];
+        const rowInputs = [];
+
         for (let col = 0; col < SIZE; col++) {
           const td = document.createElement("td");
-          const cell = document.createElement("input");
+          const input = document.createElement("input");
           const val = puzzle[row * SIZE + col];
 
+          input.type = "text";
+          input.maxLength = 1;
+          input.dataset.row = row;
+          input.dataset.col = col;
+
           if (val != null) {
-            cell.value = (val + 1);
-            cell.disabled = true;
+            input.value = val + 1;
+            input.disabled = true;
           } else {
-            cell.value = "";
+            input.addEventListener("input", () => validateCell(input));
           }
 
-          cell.maxLength = 1;
-          cell.dataset.row = row;
-          cell.dataset.col = col;
-          cell.oninput = () => validateCell(cell);
-          td.appendChild(cell);
+          td.appendChild(input);
           tr.appendChild(td);
-          inputs[row][col] = cell;
+          rowInputs.push(input);
         }
+
+        inputs.push(rowInputs);
         board.appendChild(tr);
       }
     }
@@ -115,12 +118,9 @@
     }
 
     function checkSolution() {
-      for (let row = 0; row < SIZE; row++) {
-        for (let col = 0; col < SIZE; col++) {
-          const cell = inputs[row][col];
-          if (!cell.disabled) validateCell(cell);
-        }
-      }
+      inputs.flat().forEach(cell => {
+        if (!cell.disabled) validateCell(cell);
+      });
     }
 
     function showSolution() {
@@ -133,13 +133,14 @@
       }
     }
 
-    // Load Sudoku library first
+    function newGame() {
+      const { puzzle, solution } = generateSudokuGrid();
+      createBoard(puzzle, solution);
+    }
+
     const script = document.createElement("script");
     script.src = "https://cdn.jsdelivr.net/npm/sudoku@1.0.0/sudoku.min.js";
-    script.onload = () => {
-      const { puzzle, solution } = generateSudoku();
-      createBoard(puzzle, solution);
-    };
+    script.onload = () => newGame();
     document.head.appendChild(script);
   </script>
 </body>
