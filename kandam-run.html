@@ -55,67 +55,89 @@
   </audio>
 
   <script>
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-    let avatar = "kuttan";
-    let avatarImg = new Image();
-    avatarImg.src = "kuttan.png";
+  const canvas = document.getElementById("gameCanvas");
+  const ctx = canvas.getContext("2d");
 
-    let x = 50, y = 240, vy = 0, gravity = 1, jumpPower = -15;
-    let isJumping = false;
-    let obstacleX = 800;
+  let x = 50, y = 240, vy = 0, gravity = 1, jumpPower = -15;
+  let isJumping = false;
+  let obstacleX = 800;
 
-    function selectAvatar(name) {
-      avatar = name;
-      avatarImg.src = name + ".png";
+  const avatars = {
+    kuttan: new Image(),
+    alok: new Image(),
+    darshan: new Image(),
+    prathyush: new Image()
+  };
+
+  avatars.kuttan.src = "kuttan.png";
+  avatars.alok.src = "alok.png";
+  avatars.darshan.src = "darshan.png";
+  avatars.prathyush.src = "prathyush.png";
+
+  let currentAvatar = avatars.kuttan;
+
+  function selectAvatar(name) {
+    if (avatars[name]) {
+      currentAvatar = avatars[name];
     }
+  }
 
-    function drawAvatar() {
-      ctx.drawImage(avatarImg, x, y, 40, 40);
-    }
+  function drawAvatar() {
+    ctx.drawImage(currentAvatar, x, y, 40, 40);
+  }
 
-    function drawObstacle() {
-      ctx.fillStyle = "red";
-      ctx.fillRect(obstacleX, 240, 20, 40);
-    }
+  function drawObstacle() {
+    ctx.fillStyle = "red";
+    ctx.fillRect(obstacleX, 240, 20, 40);
+  }
 
-    function update() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+  function update() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Update player
-      if (isJumping) {
-        vy += gravity;
-        y += vy;
-        if (y >= 240) {
-          y = 240;
-          vy = 0;
-          isJumping = false;
-        }
+    // Update player
+    if (isJumping) {
+      vy += gravity;
+      y += vy;
+      if (y >= 240) {
+        y = 240;
+        vy = 0;
+        isJumping = false;
       }
-
-      // Obstacle movement
-      obstacleX -= 5;
-      if (obstacleX < -20) obstacleX = 800;
-
-      // Collision
-      if (x + 40 > obstacleX && x < obstacleX + 20 && y + 40 > 240) {
-        alert("💥 KANDAM OVER! Refresh to retry.");
-        document.location.reload();
-      }
-
-      drawAvatar();
-      drawObstacle();
-      requestAnimationFrame(update);
     }
 
-    document.addEventListener("keydown", (e) => {
-      if (e.code === "Space" && !isJumping) {
-        vy = jumpPower;
-        isJumping = true;
-      }
-    });
+    // Obstacle movement
+    obstacleX -= 5;
+    if (obstacleX < -20) obstacleX = 800;
 
-    update();
-  </script>
+    // Collision
+    if (x + 40 > obstacleX && x < obstacleX + 20 && y + 40 > 240) {
+      alert("💥 KANDAM OVER! Refresh to retry.");
+      document.location.reload();
+    }
+
+    drawAvatar();
+    drawObstacle();
+    requestAnimationFrame(update);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.code === "Space" && !isJumping) {
+      vy = jumpPower;
+      isJumping = true;
+    }
+  });
+
+  function toggleMusic() {
+    const music = document.getElementById("bgMusic");
+    if (music.paused) {
+      music.play();
+    } else {
+      music.pause();
+    }
+  }
+
+  update();
+</script>
+
 </body>
 </html>
