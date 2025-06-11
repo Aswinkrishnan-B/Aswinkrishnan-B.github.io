@@ -9,7 +9,7 @@
     body {
       margin: 0;
       font-family: 'Press Start 2P', cursive;
-      background: url('https://w0.peakpx.com/wallpaper/778/433/HD-wallpaper-retro-hex-window-70s-80s-amazing-cyberpunk-retro-tron-computer-game-mountains-retrowave-road-sun-sunset.jpg') center/cover no-repeat;
+      background: url('https://i.imgur.com/vybHeeg.png') center/cover no-repeat;
       color: lime;
       text-align: center;
     }
@@ -59,6 +59,27 @@
       cursor: pointer;
     }
 
+    .dpad {
+      display: grid;
+      grid-template-areas:
+        ".    up    ."
+        "left null right"
+        ".   down   .";
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin: 20px auto;
+      width: 150px;
+    }
+
+    .dpad button {
+      padding: 15px;
+    }
+
+    .dpad .up    { grid-area: up;    }
+    .dpad .down  { grid-area: down;  }
+    .dpad .left  { grid-area: left;  }
+    .dpad .right { grid-area: right; }
+
     @media (max-width: 600px) {
       .cell {
         font-size: 5vmin;
@@ -71,13 +92,19 @@
   <div class="game-container">
     <div class="score">Score: <span id="score">0</span></div>
     <div class="grid" id="grid"></div>
+
+    <div class="dpad">
+      <button class="up" onclick="move('up')">⬆️</button>
+      <button class="left" onclick="move('left')">⬅️</button>
+      <button class="right" onclick="move('right')">➡️</button>
+      <button class="down" onclick="move('down')">⬇️</button>
+    </div>
+
     <div class="controls">
       <button onclick="restartGame()">🔁 Restart</button>
       <button onclick="shareResult()">📤 Share</button>
     </div>
   </div>
-
-  FOR BEST EXPERIENCE, USE DESKTOP MODE
 
   <script>
     const grid = document.getElementById('grid');
@@ -129,88 +156,4 @@
     }
 
     function rotateClockwise() {
-      board = board[0].map((_, i) => board.map(row => row[i]).reverse());
-    }
-
-    function rotateCounterClockwise() {
-      board = board[0].map((_, i) => board.map(row => row[row.length - 1 - i]));
-    }
-
-    function move(dir) {
-      let old = JSON.stringify(board);
-      for (let i = 0; i < { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]; i++) rotateClockwise();
-      for (let r = 0; r < 4; r++) board[r] = slide(board[r]);
-      for (let i = 0; i < (4 - { 'left': 0, 'up': 1, 'right': 2, 'down': 3 }[dir]) % 4; i++) rotateClockwise();
-      if (JSON.stringify(board) !== old) {
-        addRandomTile();
-        update();
-      }
-    }
-
-    function update() {
-      drawBoard();
-      scoreEl.textContent = score;
-      if (getEmptyCells().length === 0 && !canMove()) {
-        alert("Game Over! 😵");
-      }
-    }
-
-    function canMove() {
-      for (let r = 0; r < 4; r++) {
-        for (let c = 0; c < 4; c++) {
-          if (r < 3 && board[r][c] === board[r + 1][c]) return true;
-          if (c < 3 && board[r][c] === board[r][c + 1]) return true;
-        }
-      }
-      return false;
-    }
-
-    function restartGame() {
-      score = 0;
-      createEmptyBoard();
-      addRandomTile();
-      addRandomTile();
-      update();
-    }
-
-    function shareResult() {
-      const result = `🏁 I scored ${score} in MH Arena 2048! Try beating me!`;
-      navigator.clipboard.writeText(result);
-      alert("Copied your score to clipboard!");
-    }
-
-    document.addEventListener('keydown', e => {
-      if (e.key === 'ArrowLeft') move('left');
-      if (e.key === 'ArrowRight') move('right');
-      if (e.key === 'ArrowUp') move('up');
-      if (e.key === 'ArrowDown') move('down');
-    });
-
-    // Mobile swipe
-    let xStart = null;
-    let yStart = null;
-    document.addEventListener('touchstart', e => {
-      const touch = e.touches[0];
-      xStart = touch.clientX;
-      yStart = touch.clientY;
-    }, false);
-
-    document.addEventListener('touchend', e => {
-      if (!xStart || !yStart) return;
-      const xEnd = e.changedTouches[0].clientX;
-      const yEnd = e.changedTouches[0].clientY;
-      const xDiff = xEnd - xStart;
-      const yDiff = yEnd - yStart;
-
-      if (Math.abs(xDiff) > Math.abs(yDiff)) {
-        if (xDiff > 0) move('right'); else move('left');
-      } else {
-        if (yDiff > 0) move('down'); else move('up');
-      }
-      xStart = yStart = null;
-    }, false);
-
-    restartGame();
-  </script>
-</body>
-</html>
+      board = board
