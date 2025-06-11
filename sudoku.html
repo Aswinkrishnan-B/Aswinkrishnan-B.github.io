@@ -29,10 +29,13 @@
       text-align: center;
       font-size: 18px;
     }
-    td:nth-child(3), td:nth-child(6) {
+    td {
+      border: 1px solid #ccc;
+    }
+    td.block-right {
       border-right: 2px solid black;
     }
-    tr:nth-child(3) td, tr:nth-child(6) td {
+    td.block-bottom {
       border-bottom: 2px solid black;
     }
     .wrong {
@@ -54,27 +57,27 @@
     <button onclick="newGame()">New Game</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/sudoku@1.0.0/sudoku.min.js"></script>
   <script>
     const SIZE = 9;
     const board = document.getElementById("sudoku-board");
     let inputs = [];
     let currentSolution = [];
 
-    function generateSudokuGrid() {
-      const sudoku = window.sudoku;
+    function newGame() {
       const puzzle = sudoku.makepuzzle();
       const solution = sudoku.solvepuzzle(puzzle);
-      return { puzzle, solution };
+      renderBoard(puzzle, solution);
     }
 
-    function createBoard(puzzle, solution) {
+    function renderBoard(puzzle, solution) {
       board.innerHTML = "";
       inputs = [];
       currentSolution = solution;
 
       for (let row = 0; row < SIZE; row++) {
         const tr = document.createElement("tr");
-        const rowInputs = [];
+        inputs[row] = [];
 
         for (let col = 0; col < SIZE; col++) {
           const td = document.createElement("td");
@@ -93,12 +96,13 @@
             input.addEventListener("input", () => validateCell(input));
           }
 
+          if ((col + 1) % 3 === 0 && col !== 8) td.classList.add("block-right");
+          if ((row + 1) % 3 === 0 && row !== 8) td.classList.add("block-bottom");
+
           td.appendChild(input);
           tr.appendChild(td);
-          rowInputs.push(input);
+          inputs[row][col] = input;
         }
-
-        inputs.push(rowInputs);
         board.appendChild(tr);
       }
     }
@@ -118,9 +122,12 @@
     }
 
     function checkSolution() {
-      inputs.flat().forEach(cell => {
-        if (!cell.disabled) validateCell(cell);
-      });
+      for (let row = 0; row < SIZE; row++) {
+        for (let col = 0; col < SIZE; col++) {
+          const cell = inputs[row][col];
+          if (!cell.disabled) validateCell(cell);
+        }
+      }
     }
 
     function showSolution() {
@@ -133,15 +140,7 @@
       }
     }
 
-    function newGame() {
-      const { puzzle, solution } = generateSudokuGrid();
-      createBoard(puzzle, solution);
-    }
-
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/sudoku@1.0.0/sudoku.min.js";
-    script.onload = () => newGame();
-    document.head.appendChild(script);
+    window.onload = newGame;
   </script>
 </body>
 </html>
