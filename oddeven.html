@@ -1,67 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Odd or Even Cricket</title>
+  <meta charset="UTF-8">
+  <title>Arcade Cricket Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0; padding: 0;
-      font-family: 'Courier New', monospace;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
     body {
-      background: black;
+      background-color: black;
       color: lime;
-      padding: 10px;
       text-align: center;
+      padding: 20px;
     }
-
     h1 {
-      font-size: 1.7rem;
+      font-size: 2rem;
       margin-bottom: 10px;
       text-shadow: 1px 1px 2px #0f0;
     }
-
     .scoreboard {
       margin: 10px 0;
-      font-size: 1rem;
-      line-height: 1.5;
+      font-size: 1.2rem;
     }
-
     .buttons {
       display: flex;
-      flex-wrap: wrap;
       justify-content: center;
-      margin: 15px 0;
-      gap: 10px;
+      flex-wrap: wrap;
+      margin: 20px 0;
     }
-
     .buttons button {
-      width: 22vw;
-      max-width: 60px;
+      width: 60px;
       height: 60px;
+      margin: 10px;
       font-size: 1.5rem;
-      background: lime;
-      color: black;
+      background-color: lime;
       border: 2px solid #0f0;
-      border-radius: 8px;
+      color: black;
       cursor: pointer;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #0f0;
     }
-
     .log {
-      min-height: 60px;
+      margin-top: 20px;
       font-size: 1rem;
-      margin-top: 10px;
+      min-height: 60px;
     }
-
     .result {
       font-size: 1.4rem;
       color: yellow;
       margin-top: 15px;
     }
-
     .popup {
       position: fixed;
       top: 0; left: 0;
@@ -69,44 +56,28 @@
       background: rgba(0, 0, 0, 0.95);
       color: yellow;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 20px;
       z-index: 999;
+      font-size: 1.2rem;
+      padding: 20px;
+      text-align: center;
+      flex-direction: column;
     }
-
-    .popup h2 {
-      font-size: 1.5rem;
-      margin-bottom: 10px;
-    }
-
     .popup select, .popup button {
-      margin: 8px;
+      margin: 10px;
       padding: 10px;
       font-size: 1rem;
       border-radius: 6px;
     }
-
-    .hidden {
-      display: none;
-    }
-
-    @media (max-width: 480px) {
-      h1 { font-size: 1.4rem; }
-      .buttons button { width: 18vw; height: 50px; font-size: 1.2rem; }
-    }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
+
   <h1>🏏 Odd or Even Cricket 🕹️</h1>
-
   <div class="scoreboard" id="status">Waiting for toss...</div>
-
-  <div class="scoreboard" id="scorecard">
-    Player: 0/0 (0.0 overs)<br>
-    Computer Thala: 0/0 (0.0 overs)
-  </div>
+  <div class="scoreboard" id="scores">Player: 0/0 (0 balls) | System: 0/0 (0 balls)</div>
 
   <div class="buttons">
     <button onclick="playTurn(1)">1</button>
@@ -120,10 +91,10 @@
   <div class="log" id="log"></div>
   <div class="result" id="result"></div>
 
-  <!-- Setup Screen -->
+  <!-- Match Setup Popup -->
   <div class="popup" id="setupPopup">
     <h2>⚙️ Match Setup</h2>
-    <label>Overs:
+    <label>Choose Overs:
       <select id="oversSelect">
         <option value="1">1 Over</option>
         <option value="2">2 Overs</option>
@@ -132,7 +103,7 @@
         <option value="5">5 Overs</option>
       </select>
     </label>
-    <label>Wickets:
+    <label>Choose Wickets:
       <select id="wicketsSelect">
         <option value="1">1 Wicket</option>
         <option value="2" selected>2 Wickets</option>
@@ -141,10 +112,10 @@
         <option value="5">5 Wickets</option>
       </select>
     </label>
-    <button onclick="startToss()">Start Toss</button>
+    <button onclick="startToss()">Proceed to Toss</button>
   </div>
 
-  <!-- Toss Screen -->
+  <!-- Toss Popup -->
   <div class="popup hidden" id="tossPopup">
     <h2>🪙 Toss Time</h2>
     <p>Choose Heads or Tails</p>
@@ -152,31 +123,27 @@
     <button onclick="toss('tails')">Tails</button>
   </div>
 
-  <!-- Bat/Bowl Choice -->
+  <!-- Bat/Bowl Choice Popup -->
   <div class="popup hidden" id="batBowlPopup">
     <p>You won the toss! Choose:</p>
     <button onclick="setBatting(true)">Bat First</button>
     <button onclick="setBatting(false)">Bowl First</button>
   </div>
 
-  <!-- Popup Message -->
+  <!-- Inning Transition Popup -->
   <div class="popup hidden" id="popup"><p></p><button onclick="closePopup()">Continue</button></div>
 
   <script>
+    // Game settings
     let maxOvers = 1, maxBalls = 6, maxWickets = 2;
     let isPlayerBatting = true, gameEnded = false, target = null;
-
     let playerScore = 0, playerWickets = 0, playerBalls = 0;
     let systemScore = 0, systemWickets = 0, systemBalls = 0;
 
     const status = document.getElementById('status');
-    const scorecard = document.getElementById('scorecard');
+    const scores = document.getElementById('scores');
     const log = document.getElementById('log');
     const result = document.getElementById('result');
-
-    function formatOvers(balls) {
-      return `${Math.floor(balls / 6)}.${balls % 6}`;
-    }
 
     function startToss() {
       maxOvers = parseInt(document.getElementById('oversSelect').value);
@@ -194,7 +161,7 @@
       } else {
         isPlayerBatting = Math.random() < 0.5;
         document.getElementById('tossPopup').classList.add('hidden');
-        showPopup(`Computer Thala won the toss and chose to ${isPlayerBatting ? "bowl" : "bat"} first.`);
+        showPopup(`System won the toss and chose to ${isPlayerBatting ? "bowl" : "bat"} first.`);
       }
     }
 
@@ -204,9 +171,9 @@
       showPopup(`You chose to ${isPlayerBatting ? "bat" : "bowl"} first.`);
     }
 
-    function showPopup(msg) {
+    function showPopup(message) {
       const popup = document.getElementById('popup');
-      popup.querySelector('p').innerText = msg;
+      popup.querySelector('p').innerHTML = message;
       popup.classList.remove('hidden');
     }
 
@@ -219,35 +186,35 @@
       return Math.floor(Math.random() * 6) + 1;
     }
 
-    function playTurn(playerInput) {
+    function playTurn(playerChoice) {
       if (gameEnded || document.querySelector('.popup:not(.hidden)')) return;
 
-      const systemInput = getRandom();
+      const systemChoice = getRandom();
 
       if (isPlayerBatting) {
         playerBalls++;
-        log.innerHTML = `You chose ${playerInput}, Thala chose ${systemInput}`;
-        if (playerInput === systemInput) {
+        log.innerHTML = `You chose ${playerChoice}, System chose ${systemChoice}`;
+        if (playerChoice === systemChoice) {
           playerWickets++;
           log.innerHTML += `<br><strong>You're OUT! (${playerWickets}/${maxWickets})</strong>`;
         } else {
-          playerScore += playerInput;
+          playerScore += playerChoice;
         }
 
         if (playerWickets >= maxWickets || playerBalls >= maxBalls) {
           target = playerScore + 1;
           isPlayerBatting = false;
-          showPopup(`Your innings over! 🎯 Target for Thala: ${target}`);
+          showPopup(`Your innings over! 🎯 Target for system: ${target}`);
         }
 
       } else {
         systemBalls++;
-        log.innerHTML = `Thala chose ${systemInput}, You chose ${playerInput}`;
-        if (playerInput === systemInput) {
+        log.innerHTML = `System chose ${systemChoice}, You chose ${playerChoice}`;
+        if (playerChoice === systemChoice) {
           systemWickets++;
-          log.innerHTML += `<br><strong>Thala is OUT! (${systemWickets}/${maxWickets})</strong>`;
+          log.innerHTML += `<br><strong>System is OUT! (${systemWickets}/${maxWickets})</strong>`;
         } else {
-          systemScore += systemInput;
+          systemScore += systemChoice;
         }
 
         if (systemScore >= target) {
@@ -265,17 +232,9 @@
     }
 
     function updateUI() {
-      scorecard.innerHTML = `
-        Player: ${playerScore}/${playerWickets} (${formatOvers(playerBalls)} overs)<br>
-        Computer Thala: ${systemScore}/${systemWickets} (${formatOvers(systemBalls)} overs)
-      `;
-      status.innerText = gameEnded
-        ? "🏁 Match Over"
-        : isPlayerBatting
-        ? "🎮 You are Batting"
-        : "🤖 Thala is Batting";
+      scores.innerText = `Player: ${playerScore}/${playerWickets} (${playerBalls} balls) | System: ${systemScore}/${systemWickets} (${systemBalls} balls)`;
+      status.innerText = gameEnded ? "Game Over" : isPlayerBatting ? "You're Batting" : "System is Batting";
     }
   </script>
 </body>
 </html>
-
