@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Odd or Even Cricket Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Courier New', monospace; }
+    body {
+      background-color: black;
+      color: lime;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      text-shadow: 1px 1px 2px #0f0;
+    }
+    .scoreboard {
+      margin: 10px 0;
+      font-size: 1.2rem;
+    }
+    .buttons {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+    .buttons button {
+      width: 60px;
+      height: 60px;
+      margin: 10px;
+      font-size: 1.5rem;
+      background-color: lime;
+      border: 2px solid #0f0;
+      color: black;
+      cursor: pointer;
+      border-radius: 8px;
+      box-shadow: 0 0 8px #0f0;
+    }
+    .log {
+      margin-top: 20px;
+      font-size: 1rem;
+      min-height: 60px;
+    }
+    .result {
+      font-size: 1.4rem;
+      color: yellow;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🏏 Odd or Even Cricket 🕹️</h1>
+  <div class="scoreboard" id="status">You are Batting</div>
+  <div class="scoreboard" id="scores">Player: 0 | System: 0</div>
+
+  <div class="buttons">
+    <button onclick="playTurn(1)">1</button>
+    <button onclick="playTurn(2)">2</button>
+    <button onclick="playTurn(3)">3</button>
+    <button onclick="playTurn(4)">4</button>
+    <button onclick="playTurn(5)">5</button>
+    <button onclick="playTurn(6)">6</button>
+  </div>
+
+  <div class="log" id="log"></div>
+  <div class="result" id="result"></div>
+
+  <script>
+    let isPlayerBatting = true;
+    let playerScore = 0;
+    let systemScore = 0;
+    let target = null;
+    let gameEnded = false;
+
+    function getRandom() {
+      return Math.floor(Math.random() * 6) + 1;
+    }
+
+    function playTurn(playerChoice) {
+      if (gameEnded) return;
+
+      const systemChoice = getRandom();
+      let log = document.getElementById('log');
+      let status = document.getElementById('status');
+      let scores = document.getElementById('scores');
+      let result = document.getElementById('result');
+
+      if (isPlayerBatting) {
+        log.innerHTML = `You chose ${playerChoice}, System chose ${systemChoice}`;
+        if (playerChoice === systemChoice) {
+          isPlayerBatting = false;
+          target = playerScore + 1;
+          log.innerHTML += "<br><strong>You're OUT!</strong>";
+          status.innerText = "System is Batting";
+        } else {
+          playerScore += playerChoice;
+        }
+      } else {
+        log.innerHTML = `System chose ${systemChoice}, You chose ${playerChoice}`;
+        if (playerChoice === systemChoice) {
+          log.innerHTML += "<br><strong>System is OUT!</strong>";
+          if (systemScore < target - 1) {
+            result.innerText = "🎉 You Win!";
+          } else if (systemScore === target - 1) {
+            result.innerText = "🤝 It's a Tie!";
+          } else {
+            result.innerText = "💔 You Lose!";
+          }
+          gameEnded = true;
+          status.innerText = "Game Over";
+        } else {
+          systemScore += systemChoice;
+          if (systemScore >= target) {
+            result.innerText = "💔 You Lose!";
+            gameEnded = true;
+            status.innerText = "Game Over";
+          }
+        }
+      }
+
+      scores.innerText = `Player: ${playerScore} | System: ${systemScore}`;
+    }
+  </script>
+</body>
+</html>
