@@ -1,172 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Sudoku Game</title>
+  <meta charset="UTF-8">
+  <title>Retro XOX Game</title>
   <style>
+    @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
     body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 30px;
-      background: #f8f9fa;
-    }
-    table {
-      border-collapse: collapse;
-    }
-    td {
-      border: 1px solid #999;
-      width: 40px;
-      height: 40px;
+      background-color: #000;
+      color: #0ff;
+      font-family: 'Press Start 2P', cursive;
       text-align: center;
-      font-size: 18px;
+      margin: 0;
       padding: 0;
     }
-    input {
-      width: 100%;
-      height: 100%;
-      border: none;
-      text-align: center;
-      font-size: 18px;
-      background-color: white;
+
+    h1 {
+      margin-top: 30px;
+      text-shadow: 0 0 8px #0ff;
     }
-    td:nth-child(3), td:nth-child(6) {
-      border-right: 2px solid black;
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 10px;
+      margin: 40px auto;
+      width: max-content;
     }
-    tr:nth-child(3) td, tr:nth-child(6) td {
-      border-bottom: 2px solid black;
-    }
-    .wrong {
-      background-color: #fdd !important;
-    }
-    button {
-      margin: 15px 5px;
-      padding: 10px 20px;
-      font-size: 16px;
+
+    .cell {
+      background-color: #111;
+      border: 2px solid #0ff;
+      font-size: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ff0;
       cursor: pointer;
+      text-shadow: 0 0 5px #ff0;
+    }
+
+    .cell:hover {
+      background-color: #222;
+    }
+
+    #status {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #0f0;
+      text-shadow: 0 0 5px #0f0;
+    }
+
+    button {
+      font-family: 'Press Start 2P', cursive;
+      margin-top: 20px;
+      padding: 10px 20px;
+      background: #222;
+      color: #0ff;
+      border: 2px solid #0ff;
+      cursor: pointer;
+      text-shadow: 0 0 5px #0ff;
+    }
+
+    button:hover {
+      background: #333;
     }
   </style>
 </head>
 <body>
-  <h1>Sudoku</h1>
-  <table id="sudoku-board"></table>
-  <div>
-    <button onclick="checkSolution()">Check</button>
-    <button onclick="showSolution()">I Give Up</button>
-    <button onclick="newGame()">New Game</button>
-  </div>
+
+  <h1>RETRO XOX</h1>
+  <div id="board"></div>
+  <div id="status">Player X's turn</div>
+  <button onclick="resetGame()">Restart</button>
 
   <script>
-    const SIZE = 9;
-    const board = document.getElementById("sudoku-board");
-    let inputs = [];
-    let currentSolution = [];
+    const board = document.getElementById('board');
+    const statusText = document.getElementById('status');
+    let cells = [];
+    let currentPlayer = 'X';
+    let gameActive = true;
 
-    function generateSudokuGrid() {
-      const sudoku = window.sudoku;
-      const puzzle = sudoku.makepuzzle();
-      const solution = sudoku.solvepuzzle(puzzle);
-      return { puzzle, solution };
-    }
-
-    function createBoard(puzzle, solution) {
-      board.innerHTML = "";
-      inputs = [];
-      currentSolution = solution;
-
-      for (let row = 0; row < SIZE; row++) {
-        const tr = document.createElement("tr");
-        const rowInputs = [];
-
-        for (let col = 0; col < SIZE; col++) {
-          const td = document.createElement("td");
-          const input = document.createElement("input");
-          const val = puzzle[row * SIZE + col];
-
-          input.type = "text";
-          input.maxLength = 1;
-          input.dataset.row = row;
-          input.dataset.col = col;
-
-          if (val != null) {
-            input.value = val + 1;
-            input.disabled = true;
-            input.style.backgroundColor = "#e9ecef";
-          } else {
-            input.addEventListener("input", () => {
-              input.value = input.value.replace(/[^1-9]/g, '');
-              validateCell(input);
-              autoJump(row, col);
-            });
-          }
-
-          td.appendChild(input);
-          tr.appendChild(td);
-          rowInputs.push(input);
-        }
-
-        inputs.push(rowInputs);
-        board.appendChild(tr);
+    function createBoard() {
+      board.innerHTML = '';
+      cells = [];
+      for (let i = 0; i < 9; i++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.index = i;
+        cell.addEventListener('click', handleMove);
+        board.appendChild(cell);
+        cells.push(cell);
       }
     }
 
-    function validateCell(cell) {
-      const row = parseInt(cell.dataset.row);
-      const col = parseInt(cell.dataset.col);
-      const val = parseInt(cell.value);
+    function handleMove(e) {
+      const cell = e.target;
+      if (!gameActive || cell.textContent !== '') return;
 
-      if (!val || val < 1 || val > 9) {
-        cell.classList.remove("wrong");
-        return;
+      cell.textContent = currentPlayer;
+      if (checkWin()) {
+        statusText.textContent = `Player ${currentPlayer} wins!`;
+        gameActive = false;
+      } else if (cells.every(c => c.textContent !== '')) {
+        statusText.textContent = "It's a draw!";
+        gameActive = false;
+      } else {
+        currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+        statusText.textContent = `Player ${currentPlayer}'s turn`;
       }
-
-      const correctVal = currentSolution[row * SIZE + col] + 1;
-      cell.classList.toggle("wrong", val !== correctVal);
     }
 
-    function checkSolution() {
-      inputs.flat().forEach(cell => {
-        if (!cell.disabled) validateCell(cell);
+    function checkWin() {
+      const winPatterns = [
+        [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+        [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+        [0, 4, 8], [2, 4, 6]             // diagonals
+      ];
+      return winPatterns.some(pattern => {
+        const [a, b, c] = pattern;
+        return (
+          cells[a].textContent &&
+          cells[a].textContent === cells[b].textContent &&
+          cells[a].textContent === cells[c].textContent
+        );
       });
     }
 
-    function showSolution() {
-      for (let row = 0; row < SIZE; row++) {
-        for (let col = 0; col < SIZE; col++) {
-          const cell = inputs[row][col];
-          cell.value = currentSolution[row * SIZE + col] + 1;
-          cell.classList.remove("wrong");
-        }
-      }
+    function resetGame() {
+      currentPlayer = 'X';
+      gameActive = true;
+      statusText.textContent = `Player ${currentPlayer}'s turn`;
+      createBoard();
     }
 
-    function autoJump(row, col) {
-      let nextCol = col + 1;
-      let nextRow = row;
-
-      if (nextCol >= SIZE) {
-        nextCol = 0;
-        nextRow = row + 1;
-      }
-
-      if (nextRow >= SIZE) return;
-
-      const next = inputs[nextRow][nextCol];
-      if (next && !next.disabled) next.focus();
-      else autoJump(nextRow, nextCol); // skip over disabled cells
-    }
-
-    function newGame() {
-      const { puzzle, solution } = generateSudokuGrid();
-      createBoard(puzzle, solution);
-    }
-
-    // Load Sudoku.js library
-    const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/sudoku@1.0.0/sudoku.min.js";
-    script.onload = () => newGame();
-    document.head.appendChild(script);
+    createBoard();
   </script>
+
 </body>
 </html>
