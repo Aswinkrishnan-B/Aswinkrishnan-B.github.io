@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Snake Game - Retro Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
       background-color: #000;
@@ -11,9 +12,8 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: start;
       margin: 0;
-      padding: 20px 10px;
+      padding: 1rem;
     }
 
     h1 {
@@ -34,23 +34,40 @@
     }
 
     .controls {
-      margin-top: 15px;
+      margin-top: 1.5rem;
       display: grid;
-      grid-template-columns: 50px 50px 50px;
+      grid-template-columns: repeat(3, 22vw);
+      grid-template-rows: repeat(2, 22vw);
       gap: 10px;
       justify-content: center;
+      align-items: center;
     }
 
     .btn {
-      width: 50px;
-      height: 50px;
+      width: 100%;
+      height: 100%;
       background: #222;
       border: 2px solid #0f0;
       color: #0f0;
-      font-size: 22px;
+      font-size: 6vw;
       text-align: center;
-      line-height: 50px;
+      line-height: 22vw;
       user-select: none;
+      border-radius: 10px;
+    }
+
+    @media (min-width: 600px) {
+      .btn {
+        font-size: 24px;
+        line-height: 50px;
+        height: 50px;
+        width: 50px;
+      }
+
+      .controls {
+        grid-template-columns: 50px 50px 50px;
+        grid-template-rows: 50px 50px;
+      }
     }
   </style>
 </head>
@@ -59,6 +76,7 @@
   <canvas id="game" width="500" height="500"></canvas>
   <div class="score">Score: <span id="score">0</span></div>
 
+  <!-- On-screen controls -->
   <div class="controls">
     <div></div>
     <div class="btn" onclick="changeDirection('up')">↑</div>
@@ -71,7 +89,7 @@
   <script>
     const canvas = document.getElementById("game");
     const ctx = canvas.getContext("2d");
-    const box = 20; // Pixel size per cell
+    const box = 20;
     const rows = canvas.width / box;
     let direction = "right";
     let score = 0;
@@ -85,24 +103,20 @@
     function draw() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw snake
       snake.forEach((seg, i) => {
         ctx.fillStyle = i === 0 ? "#0f0" : "#090";
         ctx.fillRect(seg.x, seg.y, box, box);
       });
 
-      // Draw food
       ctx.fillStyle = "#f00";
       ctx.fillRect(food.x, food.y, box, box);
 
-      // Move snake
       let head = { ...snake[0] };
       if (direction === "left") head.x -= box;
       if (direction === "right") head.x += box;
       if (direction === "up") head.y -= box;
       if (direction === "down") head.y += box;
 
-      // Game over logic
       if (
         head.x < 0 || head.y < 0 ||
         head.x >= canvas.width || head.y >= canvas.height ||
@@ -113,7 +127,6 @@
         return;
       }
 
-      // Eat food
       if (head.x === food.x && head.y === food.y) {
         score++;
         document.getElementById("score").innerText = score;
@@ -153,7 +166,8 @@
       };
     }
 
-    setInterval(draw, 180); // slower speed for easier play
+    setInterval(draw, 180);
   </script>
 </body>
 </html>
+
