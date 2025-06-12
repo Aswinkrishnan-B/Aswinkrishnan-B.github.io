@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poojyam Vettikali</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f2f2f2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      margin-top: 10px;
+      color: #2c3e50;
+    }
+
+    #scoreboard {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 400px;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+
+    .player {
+      padding: 5px;
+      border-radius: 8px;
+    }
+
+    .p1 {
+      background: #ff7675;
+      color: white;
+    }
+
+    .p2 {
+      background: #74b9ff;
+      color: white;
+    }
+
+    .p3 {
+      background: #55efc4;
+      color: #2d3436;
+    }
+
+    #board {
+      display: grid;
+      grid-template-columns: repeat(7, 40px);
+      grid-template-rows: repeat(7, 40px);
+      gap: 5px;
+      margin-bottom: 20px;
+    }
+
+    .dot {
+      background: #2d3436;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin: auto;
+    }
+
+    .line {
+      background: transparent;
+      cursor: pointer;
+    }
+
+    .line.selected {
+      background: #636e72;
+    }
+
+    .cell {
+      background: transparent;
+      text-align: center;
+      vertical-align: middle;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .p1-cell {
+      background: #ffeaa7;
+    }
+
+    .p2-cell {
+      background: #dfe6e9;
+    }
+
+    .p3-cell {
+      background: #fab1a0;
+    }
+
+    button {
+      padding: 10px 20px;
+      margin: 5px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    #retry {
+      background: #00b894;
+      color: white;
+    }
+
+    #howto {
+      background: #6c5ce7;
+      color: white;
+    }
+
+    @media (max-width: 500px) {
+      #board {
+        transform: scale(0.9);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Poojyam Vettikali</h1>
+  <div id="scoreboard">
+    <div class="player p1">You: <span id="score1">0</span></div>
+    <div class="player p2">Suresh: <span id="score2">0</span></div>
+    <div class="player p3">Ramesh: <span id="score3">0</span></div>
+  </div>
+
+  <div id="board"></div>
+
+  <button id="retry">Retry</button>
+  <button id="howto">?</button>
+
+  <script>
+    const board = document.getElementById("board");
+    const size = 4; // 4x4 boxes => 5x5 dots
+    let lines = {}, boxes = {};
+    let scores = [0, 0, 0];
+    let turn = 0; // 0 - player, 1 - suresh, 2 - ramesh
+
+    function resetGame() {
+      board.innerHTML = "";
+      lines = {}; boxes = {}; scores = [0, 0, 0]; turn = 0;
+      document.getElementById("score1").innerText = "0";
+      document.getElementById("score2").innerText = "0";
+      document.getElementById("score3").innerText = "0";
+      generateBoard();
+    }
+
+    function generateBoard() {
+      for (let r = 0; r < size * 2 + 1; r++) {
+        for (let c = 0; c < size * 2 + 1; c++) {
+          let div = document.createElement("div");
+          if (r % 2 === 0 && c % 2 === 0) {
+            div.className = "dot";
+          } else if (r % 2 === 0 || c % 2 === 0) {
+            div.className = "line";
+            const key = `${r}-${c}`;
+            div.addEventListener("click", () => handleClick(key, div));
+          } else {
+            div.className = "cell";
+          }
+          board.appendChild(div);
+        }
+      }
+    }
+
+    function handleClick(key, element) {
+      if (lines[key]) return;
+      lines[key] = true;
+      element.classList.add("selected");
+      const boxClaimed = checkBoxes();
+      if (!boxClaimed) nextTurn();
+    }
+
+    function nextTurn() {
+      turn = (turn + 1) % 3;
+      if (turn > 0) setTimeout(computerPlay, 500);
+    }
+
+    function computerPlay() {
+      const lineKeys = Object.keys(document.querySelectorAll(".line"));
+      const available = Array.from(document.querySelectorAll(".line")).filter(l => !l.classList.contains("selected"));
+      if (available.length === 0) return;
+      const random = available[Math.floor(Math.random() * available.length)];
+      random.click();
+    }
+
+    function checkBoxes() {
+      let claimed = false;
+      for (let r = 1; r < size * 2; r += 2) {
+        for (let c = 1; c < size * 2; c += 2) {
+          const top = `${r - 1}-${c}`;
+          const bottom = `${r + 1}-${c}`;
+          const left = `${r}-${c - 1}`;
+          const right = `${r}-${c + 1}`;
+          const boxKey = `${r}-${c}`;
+          if (!boxes[boxKey] && lines[top] && lines[bottom] && lines[left] && lines[right]) {
+            boxes[boxKey] = true;
+            const cell = board.children[r * (size * 2 + 1) + c];
+            cell.innerText = ["You", "S", "R"][turn];
+            cell.classList.add(`p${turn + 1}-cell`);
+            scores[turn]++;
+            document.getElementById(`score${turn + 1}`).innerText = scores[turn];
+            claimed = true;
+          }
+        }
+      }
+      return claimed;
+    }
+
+    document.getElementById("retry").addEventListener("click", resetGame);
+    document.getElementById("howto").addEventListener("click", () => {
+      alert("Take turns drawing lines between dots. Complete a box to claim it. The player with most boxes wins! You play against Suresh and Ramesh.");
+    });
+
+    resetGame();
+  </script>
+</body>
+
+</html>
