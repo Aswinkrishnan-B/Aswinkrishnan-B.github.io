@@ -1,174 +1,152 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Poojyam Vettikali</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; background: #f5f5f5; display: flex; flex-direction: column; align-items: center; padding: 10px; }
-
-    h1 { color: #333; margin-bottom: 10px; }
-    #scoreboard { display: flex; gap: 15px; margin-bottom: 10px; font-weight: bold; }
-    .score { padding: 6px 12px; border-radius: 8px; }
-    .p1 { background-color: #ffce00; }
-    .p2 { background-color: #ff5733; color: white; }
-    .p3 { background-color: #3498db; color: white; }
-
-    #game { display: grid; grid-template-columns: repeat(9, 30px); gap: 4px; }
-    .dot { width: 10px; height: 10px; background: black; border-radius: 50%; margin: auto; }
-    .h-line, .v-line { background: #ccc; cursor: pointer; }
-    .h-line { height: 4px; }
-    .v-line { width: 4px; }
-    .line.selected { background: black; }
-    .cell { width: 30px; height: 30px; text-align: center; font-size: 14px; display: flex; align-items: center; justify-content: center; }
-
-    .cell.p1 { background-color: #ffef9f; }
-    .cell.p2 { background-color: #ffc5b2; }
-    .cell.p3 { background-color: #b5d9f8; }
-
-    #buttons { margin-top: 10px; display: flex; gap: 10px; }
-    button { padding: 8px 14px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
-    #retry { background: #2ecc71; color: white; }
-    #howto { background: #e67e22; color: white; }
-
-    @media (max-width: 500px) {
-      #game { transform: scale(0.9); }
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>Poojyam Vettikali</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:Arial,sans-serif;background:#f5f5f5;display:flex;flex-direction:column;align-items:center;padding:10px;}
+  h1{margin-bottom:10px;color:#333;}
+  #scoreboard{display:flex;gap:10px;margin-bottom:10px;}
+  .score{padding:6px 12px;border-radius:6px;font-weight:bold;}
+  .p1{background:#ffce00;}
+  .p2{background:#ff5733;color:#fff;}
+  .p3{background:#3498db;color:#fff;}
+  #game{display:grid;grid-template-columns:repeat(11,40px);gap:4px;}
+  .dot{width:10px;height:10px;border-radius:50%;background:#333;justify-self:center;align-self:center;}
+  .h-line{height:20px;width:40px;background:#eee;cursor:pointer;}
+  .v-line{width:20px;height:40px;background:#eee;cursor:pointer;justify-self:center;}
+  .h-line:hover,.v-line:hover{background:#ccc;}
+  .line.selected{background:#333!important;}
+  .cell{width:40px;height:40px;}
+  .cell.p1{background:#ffef9f;}
+  .cell.p2{background:#ffc5b2;}
+  .cell.p3{background:#b5d9f8;}
+  #buttons{margin-top:10px;display:flex;gap:10px;}
+  button{padding:8px 14px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;}
+  #retry{background:#2ecc71;color:#fff;}
+  #howto{background:#e67e22;color:#fff;}
+  @media(max-width:500px){#game{transform:scale(0.85);}}
+</style>
 </head>
 <body>
-
   <h1>Poojyam Vettikali</h1>
   <div id="scoreboard">
     <div class="score p1">You: <span id="score1">0</span></div>
     <div class="score p2">Suresh: <span id="score2">0</span></div>
     <div class="score p3">Ramesh: <span id="score3">0</span></div>
   </div>
-
   <div id="game"></div>
-
   <div id="buttons">
     <button id="retry">Retry</button>
     <button id="howto">?</button>
   </div>
+<script>
+const game = document.getElementById("game"),
+      size = 6,  // Creates a 5-line grid
+      scores = [0,0,0,0],
+      players = ["","p1","p2","p3"];
+let current = 1;
 
-  <script>
-    const game = document.getElementById("game");
-    const size = 5;
-    let currentPlayer = 1;
-    const scores = [0, 0, 0, 0]; // 0 unused
+function resetGame(){
+  game.innerHTML = "";
+  scores.fill(0);
+  updateScores();
+  current = 1;
+  buildGrid();
+}
+function updateScores(){
+  document.getElementById("score1").textContent = scores[1];
+  document.getElementById("score2").textContent = scores[2];
+  document.getElementById("score3").textContent = scores[3];
+}
 
-    const players = ["", "p1", "p2", "p3"];
-    const board = []; // 2D array of cells
-
-    function resetGame() {
-      game.innerHTML = "";
-      board.length = 0;
-      scores.fill(0);
-      updateScores();
-      currentPlayer = 1;
-      createGrid();
-    }
-
-    function updateScores() {
-      document.getElementById("score1").textContent = scores[1];
-      document.getElementById("score2").textContent = scores[2];
-      document.getElementById("score3").textContent = scores[3];
-    }
-
-    function createGrid() {
-      for (let i = 0; i < size * 2 - 1; i++) {
-        for (let j = 0; j < size * 2 - 1; j++) {
-          const cell = document.createElement("div");
-
-          if (i % 2 === 0 && j % 2 === 0) {
-            cell.className = "dot";
-          } else if (i % 2 === 0) {
-            cell.className = "h-line";
-            cell.addEventListener("click", () => selectLine(cell, i, j));
-          } else if (j % 2 === 0) {
-            cell.className = "v-line";
-            cell.addEventListener("click", () => selectLine(cell, i, j));
-          } else {
-            cell.className = "cell";
-            if (!board[i]) board[i] = [];
-            board[i][j] = { element: cell, owner: 0 };
-          }
-
-          game.appendChild(cell);
-        }
-      }
-    }
-
-    function selectLine(el, i, j) {
-      if (el.classList.contains("selected")) return;
-      el.classList.add("selected");
-
-      const madeBox = checkAndFillBoxes(i, j);
-      if (!madeBox) {
-        currentPlayer = currentPlayer % 3 + 1;
-        if (currentPlayer !== 1) setTimeout(botMove, 600);
+function buildGrid(){
+  const board = [];
+  for(let i=0;i<2*size-1;i++){
+    board.push([]);
+    for(let j=0;j<2*size-1;j++){
+      const div = document.createElement("div");
+      if(i%2===0 && j%2===0){
+        div.className="dot";
+      } else if(i%2===0){
+        div.className="h-line";
+        div.onclick = ()=>selectLine(div,i,j,board);
+      } else if(j%2===0){
+        div.className="v-line";
+        div.onclick = ()=>selectLine(div,i,j,board);
       } else {
+        div.className="cell";
+        board[i][j] = {el:div, claim:0};
+      }
+      game.appendChild(div);
+    }
+  }
+}
+
+function selectLine(el,i,j,board){
+  if(el.classList.contains("selected")) return;
+  el.classList.add("selected");
+  const made = checkBoxes(i,j,board);
+  if(!made){
+    current = current%3 + 1;
+    if(current!==1) setTimeout(botPlay,300,board);
+  }
+}
+
+function botPlay(board){
+  const avail = Array.from(document.querySelectorAll(".h-line, .v-line"))
+                     .filter(l=>!l.classList.contains("selected"));
+  if(!avail.length)return;
+  const choice = avail[Math.floor(Math.random()*avail.length)];
+  choice.click();
+}
+
+function checkBoxes(i,j,board){
+  let got = false;
+  [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(d=>{
+    const ci=i+d[0], cj=j+d[1];
+    if(board[ci] && board[ci][cj] && board[ci][cj].claim===0){
+      const top = getLine(ci-1,cj), bottom = getLine(ci+1,cj),
+            left = getLine(ci,cj-1), right = getLine(ci,cj+1);
+      if(top?.classList.contains("selected") &&
+         bottom?.classList.contains("selected") &&
+         left?.classList.contains("selected") &&
+         right?.classList.contains("selected")){
+        board[ci][cj].el.classList.add(players[current]);
+        board[ci][cj].claim = current;
+        scores[current]++;
         updateScores();
+        got = true;
       }
     }
+  });
+  return got;
+}
+function getLine(i,j){
+  const idx = i%2===0 && j%2===1
+    ? (i/2)*(size-1)+(j-1)/2
+    : (i%2===1 && j%2===0)
+      ? ((i-1)/2)*size+j/2
+      : -1;
+  return i%2===0 && j%2===1
+         ? document.querySelectorAll(".h-line")[idx]
+         : i%2===1 && j%2===0
+           ? document.querySelectorAll(".v-line")[idx]
+           : null;
+}
 
-    function botMove() {
-      const lines = Array.from(document.querySelectorAll(".h-line, .v-line"));
-      const unselected = lines.filter(l => !l.classList.contains("selected"));
-      if (unselected.length === 0) return;
+document.getElementById("retry").onclick = resetGame;
+document.getElementById("howto").onclick = ()=>alert(
+  "⋆ How to Play ⋆\n\n" +
+  "• Click between two dots to draw a line.\n" +
+  "• Complete a square to claim it and earn another turn.\n" +
+  "• You = You, Bot1 = Suresh, Bot2 = Ramesh.\n" +
+  "• Player with most boxes wins!"
+);
 
-      const randomLine = unselected[Math.floor(Math.random() * unselected.length)];
-      randomLine.click();
-    }
-
-    function checkAndFillBoxes(i, j) {
-      let filled = false;
-      const dirs = [
-        { di: -1, dj: -1 }, { di: -1, dj: 1 },
-        { di: 1, dj: -1 }, { di: 1, dj: 1 }
-      ];
-
-      dirs.forEach(({ di, dj }) => {
-        const ci = i + di;
-        const cj = j + dj;
-        if (board[ci] && board[ci][cj] && board[ci][cj].owner === 0) {
-          if (isBoxCompleted(ci, cj)) {
-            board[ci][cj].element.classList.add(players[currentPlayer]);
-            board[ci][cj].owner = currentPlayer;
-            scores[currentPlayer]++;
-            filled = true;
-          }
-        }
-      });
-
-      return filled;
-    }
-
-    function isBoxCompleted(i, j) {
-      const top = document.querySelectorAll(".h-line")[(i - 1) / 2 * (size - 1) + (j - 1) / 2];
-      const bottom = document.querySelectorAll(".h-line")[(i + 1) / 2 * (size - 1) + (j - 1) / 2];
-      const left = document.querySelectorAll(".v-line")[(i - 1) / 2 * size + (j - 1) / 2];
-      const right = document.querySelectorAll(".v-line")[(i - 1) / 2 * size + (j + 1) / 2];
-
-      return top?.classList.contains("selected") &&
-             bottom?.classList.contains("selected") &&
-             left?.classList.contains("selected") &&
-             right?.classList.contains("selected");
-    }
-
-    document.getElementById("retry").addEventListener("click", resetGame);
-    document.getElementById("howto").addEventListener("click", () => {
-      alert(`Poojyam Vettikali (Dots & Boxes)
-1. Players take turns drawing a line between two dots.
-2. Complete a square to claim it and get another turn.
-3. Player with most boxes wins.
-You play as 'You'. Suresh and Ramesh are bots.`);
-    });
-
-    resetGame();
-  </script>
-
+resetGame();
+</script>
 </body>
 </html>
