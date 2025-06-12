@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Poojyam Vettikali</title>
+  <title>Poojyam Vettikali (പൂജ്യം വെട്ടിക്കളി)</title>
+  <p>Created by @aswinkrishnan_b and OpenAI's ChatGPT</p>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #fdfdfd; }
@@ -52,7 +53,7 @@
   </div>
 
 <script>
-const size = 5;
+const size = 4;
 let currentPlayer = 1;
 const scores = [0, 0, 0, 0];
 const playerNames = ["", "You", "Suresh", "Ramesh"];
@@ -107,14 +108,53 @@ function handleLine(el, i, j) {
   if (el.classList.contains("selected")) return;
   el.classList.add("selected");
 
-  const completed = checkForBoxes(i, j);
+  let claimed = false;
+  const adjacentCells = [];
+
+  if (i % 2 === 0) {
+    if (i > 0) adjacentCells.push([i - 1, j]);
+    if (i < size * 2 - 2) adjacentCells.push([i + 1, j]);
+  } else {
+    if (j > 0) adjacentCells.push([i, j - 1]);
+    if (j < size * 2 - 2) adjacentCells.push([i, j + 1]);
+  }
+
+  for (let [ci, cj] of adjacentCells) {
+    if (!board[ci] || !board[ci][cj]) continue;
+    if (board[ci][cj].owner !== 0) continue;
+
+    const top = getLine(ci - 1, cj);
+    const bottom = getLine(ci + 1, cj);
+    const left = getLine(ci, cj - 1);
+    const right = getLine(ci, cj + 1);
+
+    if (top && top.classList.contains("selected") &&
+        bottom && bottom.classList.contains("selected") &&
+        left && left.classList.contains("selected") &&
+        right && right.classList.contains("selected")) {
+      board[ci][cj].owner = currentPlayer;
+      board[ci][cj].el.classList.add(playerClass[currentPlayer]);
+      scores[currentPlayer]++;
+      claimed = true;
+    }
+  }
+
   updateScores();
 
-  if (!completed) {
+  if (!claimed) {
     currentPlayer = currentPlayer % 3 + 1;
-    updateTurnDisplay();
-    if (currentPlayer !== 1) setTimeout(botTurn, 600);
   }
+
+  updateTurnDisplay();
+
+  if (currentPlayer !== 1) {
+    setTimeout(botTurn, 500);
+  }
+}
+
+function getLine(i, j) {
+  if (i < 0 || j < 0 || i >= size * 2 - 1 || j >= size * 2 - 1) return null;
+  return game.children[i * (size * 2 - 1) + j];
 }
 
 function botTurn() {
@@ -124,48 +164,12 @@ function botTurn() {
   pick.click();
 }
 
-function checkForBoxes(i, j) {
-  let claimed = false;
-
-  const directions = [
-    { ci: -1, cj: -1 }, { ci: -1, cj: 1 },
-    { ci: 1, cj: -1 }, { ci: 1, cj: 1 }
-  ];
-
-  directions.forEach(({ ci, cj }) => {
-    const row = i + ci, col = j + cj;
-    if (board[row] && board[row][col] && board[row][col].owner === 0) {
-      const top = document.querySelector(`[style-index="${row - 1},${col}"]`) || getLine(row - 1, col);
-      const bottom = document.querySelector(`[style-index="${row + 1},${col}"]`) || getLine(row + 1, col);
-      const left = document.querySelector(`[style-index="${row},${col - 1}"]`) || getLine(row, col - 1);
-      const right = document.querySelector(`[style-index="${row},${col + 1}"]`) || getLine(row, col + 1);
-
-      if (top?.classList.contains("selected") &&
-          bottom?.classList.contains("selected") &&
-          left?.classList.contains("selected") &&
-          right?.classList.contains("selected")) {
-        board[row][col].owner = currentPlayer;
-        board[row][col].el.classList.add(playerClass[currentPlayer]);
-        scores[currentPlayer]++;
-        claimed = true;
-      }
-    }
-  });
-
-  return claimed;
-}
-
-function getLine(i, j) {
-  const index = (i * (size * 2 - 1)) + j;
-  return game.children[index];
-}
-
 document.getElementById("retry").addEventListener("click", resetGame);
 document.getElementById("howto").addEventListener("click", () => {
   alert(`Poojyam Vettikali (Dots and Boxes)\n\nInstructions:
 1. Tap between dots to draw a line.
 2. Complete a box to claim it.
-3. You get another turn after claiming a box.
+3. If you complete a box, you get another turn.
 4. Suresh and Ramesh are bots.
 5. Game ends when all boxes are filled.`);
 });
@@ -174,3 +178,4 @@ resetGame();
 </script>
 </body>
 </html>
+
