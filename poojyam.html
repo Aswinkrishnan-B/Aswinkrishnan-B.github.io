@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Poojyam Vettikali (പൂജ്യം വെട്ടിക്കളി)</title>
-  <p>Created by @aswinkrishnan_b and OpenAI's ChatGPT</p>
+  <title>Poojyam Vettikali(പൂജ്യം വെട്ടിക്കളി)</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; padding: 10px; background: #fdfdfd; }
     h1 { margin: 10px; }
     #turn { margin-bottom: 10px; font-weight: bold; }
-    #game { display: grid; gap: 4px; }
+    #game { display: grid; gap: 4px; margin-top: 10px; }
     .dot { width: 10px; height: 10px; background: #000; border-radius: 50%; }
     .h-line, .v-line { background: #ddd; cursor: pointer; }
     .h-line { height: 6px; width: 40px; }
@@ -33,13 +32,41 @@
     #retry { background: #2ecc71; color: white; }
     #howto { background: #e67e22; color: white; }
 
+    #gridSelector, #gameOverScreen {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .modal {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .modal h2 { margin-bottom: 15px; }
+    .modal button {
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #3498db;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
     @media (max-width: 500px) {
       #game { transform: scale(0.9); transform-origin: top left; }
     }
   </style>
 </head>
 <body>
-  <h1>Poojyam Vettikali</h1>
+  <h1>Poojyam Vettikali (പൂജ്യം വെട്ടിക്കളി)</h1>
+  <p>Created by @aswinkrishnan_b & ChatGPT</p>
   <div id="turn">Turn: <span id="playerName">You</span></div>
   <div id="scoreboard">
     <div class="score p1">You: <span id="score1">0</span></div>
@@ -52,8 +79,27 @@
     <button id="howto">?</button>
   </div>
 
+  <!-- Grid Selector Modal -->
+  <div id="gridSelector" class="modal">
+    <div class="modal">
+      <h2>Select Grid Size</h2>
+      <button onclick="startGame(3)">3 × 3</button>
+      <button onclick="startGame(4)">4 × 4</button>
+      <button onclick="startGame(5)">5 × 5</button>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div id="gameOverScreen" class="modal" style="display: none;">
+    <div class="modal">
+      <h2>Game Over</h2>
+      <div id="finalScores"></div>
+      <button onclick="showGridSelector()">Play Again</button>
+    </div>
+  </div>
+
 <script>
-const size = 4;
+let size = 4;
 let currentPlayer = 1;
 const scores = [0, 0, 0, 0];
 const playerNames = ["", "You", "Suresh", "Ramesh"];
@@ -69,6 +115,25 @@ function updateScores() {
   document.getElementById("score2").innerText = scores[2];
   document.getElementById("score3").innerText = scores[3];
 }
+function showGridSelector() {
+  document.getElementById("gridSelector").style.display = "flex";
+  document.getElementById("gameOverScreen").style.display = "none";
+}
+function showGameOver() {
+  const totalBoxes = size * size;
+  const result = [1, 2, 3].map(p => ({ player: playerNames[p], score: scores[p] }))
+                          .sort((a, b) => b.score - a.score);
+  const finalScores = result.map(r => `<p><strong>${r.player}:</strong> ${r.score} / ${totalBoxes}</p>`).join("");
+  document.getElementById("finalScores").innerHTML = finalScores;
+  document.getElementById("gameOverScreen").style.display = "flex";
+}
+
+function startGame(selectedSize) {
+  size = selectedSize;
+  document.getElementById("gridSelector").style.display = "none";
+  resetGame();
+}
+
 function resetGame() {
   game.innerHTML = "";
   scores.fill(0);
@@ -128,10 +193,10 @@ function handleLine(el, i, j) {
     const left = getLine(ci, cj - 1);
     const right = getLine(ci, cj + 1);
 
-    if (top && top.classList.contains("selected") &&
-        bottom && bottom.classList.contains("selected") &&
-        left && left.classList.contains("selected") &&
-        right && right.classList.contains("selected")) {
+    if (top?.classList.contains("selected") &&
+        bottom?.classList.contains("selected") &&
+        left?.classList.contains("selected") &&
+        right?.classList.contains("selected")) {
       board[ci][cj].owner = currentPlayer;
       board[ci][cj].el.classList.add(playerClass[currentPlayer]);
       scores[currentPlayer]++;
@@ -140,6 +205,12 @@ function handleLine(el, i, j) {
   }
 
   updateScores();
+
+  const totalClaimed = scores[1] + scores[2] + scores[3];
+  if (totalClaimed === size * size) {
+    showGameOver();
+    return;
+  }
 
   if (!claimed) {
     currentPlayer = currentPlayer % 3 + 1;
@@ -164,18 +235,19 @@ function botTurn() {
   pick.click();
 }
 
-document.getElementById("retry").addEventListener("click", resetGame);
+document.getElementById("retry").addEventListener("click", showGridSelector);
 document.getElementById("howto").addEventListener("click", () => {
   alert(`Poojyam Vettikali (Dots and Boxes)\n\nInstructions:
-1. Tap between dots to draw a line.
-2. Complete a box to claim it.
-3. If you complete a box, you get another turn.
-4. Suresh and Ramesh are bots.
-5. Game ends when all boxes are filled.`);
+1. Select a grid size to start.
+2. Tap between dots to draw a line.
+3. Complete a box to claim it.
+4. If you complete a box, you get another turn.
+5. Suresh and Ramesh are bots.
+6. Game ends when all boxes are filled.`);
 });
 
-resetGame();
 </script>
 </body>
 </html>
+
 
