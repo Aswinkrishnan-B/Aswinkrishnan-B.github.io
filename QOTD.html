@@ -20,7 +20,7 @@
 </head>
 <body>
   <div id="quiz-container">
-    <div id="question">Loading...</div>
+    <div id="question">Loading trivia...</div>
     <div id="timer">15</div>
     <input id="answer-input" type="text" placeholder="Your answer..." autocomplete="off"/>
     <br/>
@@ -31,57 +31,62 @@
 
   <script>
     const BASE = 'https://sites.google.com/ivytech.edu/cae/home/trivia-questions';
-    const visited = new Set(JSON.parse(sessionStorage.getItem('vt')||'[]'));
+    const visited = new Set(JSON.parse(sessionStorage.getItem('vt') || '[]'));
     let questions = [], answers = [], timerInt, currentIdx = 0;
 
-    function renderNav(){
+    function renderNav() {
       const nb = document.getElementById('nav-buttons');
       nb.innerHTML = '';
-      for(let i=0;i<questions.length;i++){
+      questions.forEach((_, i) => {
         const btn = document.createElement('button');
-        btn.textContent = (i===0) ? 'Today' : i;
-        btn.className = 'nav-btn' + (visited.has(i)?' visited':'') + (i === currentIdx ? ' active' : '');
-        btn.onclick = ()=>load(i);
+        btn.textContent = (i === 0) ? 'Today' : i;
+        btn.className = 'nav-btn' + (visited.has(i) ? ' visited' : '') + (i === currentIdx ? ' active' : '');
+        btn.onclick = () => load(i);
         nb.appendChild(btn);
-      }
+      });
     }
 
-    function markVisit(i){
+    function markVisit(i) {
       visited.add(i);
       sessionStorage.setItem('vt', JSON.stringify([...visited]));
     }
 
-    async function loadQA(){
+    async function loadQA() {
       const resp = await fetch(BASE);
-      const text = await resp.text();
-      const doc = new DOMParser().parseFromString(text,'text/html');
-      // Questions: heading text, class 'duRjpb'
-      questions = Array.from(doc.querySelectorAll('.duRjpb')).map(el=>el.textContent.trim());
-      // Answers: paragraph text below, class 'OmQG5e'
-      answers = Array.from(doc.querySelectorAll('.OmQG5e')).map(el=>el.textContent.trim());
-      // Fallback if counts mismatch
-      if(answers.length < questions.length) answers = answers.concat(Array(questions.length-answers.length).fill('Answer not found'));
+      const html = await resp.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      // Correct case-sensitive selectors
+      const qEls = Array.from(doc.querySelectorAll('.DuRjpb'));
+      const aEls = Array.from(doc.querySelectorAll('.OmQG5e'));
+      // Take up to 11 entries (0 = today + 10 previous)
+      questions = qEls.slice(0, 11).map(el => el.textContent.trim());
+      answers = aEls.slice(0, 11).map(el => el.textContent.trim());
+      // Ensure same length
+      while (answers.length < questions.length) answers.push('Answer not found');
     }
 
-    function showResult(correct){
+    function showResult(correct) {
       clearInterval(timerInt);
       document.getElementById('submit-btn').disabled = true;
-      const ua = document.getElementById('answer-input').value.trim() || '<No answer>';
-      document.getElementById('result').innerHTML = `<strong>Your:</strong> ${ua}<br/><strong>Correct:</strong> ${correct}`;
+      const userAns = document.getElementById('answer-input').value.trim() || '<No answer>';
+      document.getElementById('result').innerHTML = `<strong>Your:</strong> ${userAns}<br/><strong>Correct:</strong> ${correct}`;
     }
 
-    function startTimer(ans){
+    function startTimer(ans) {
       let t = 15;
-      const te = document.getElementById('timer'); te.textContent = t;
-      document.getElementById('submit-btn').disabled = false;
-      document.getElementById('submit-btn').onclick = ()=>showResult(ans);
-      timerInt = setInterval(()=>{
-        t--; te.textContent = t>0? t:0;
-        if(t<=0) showResult(ans);
-      },1000);
+      const te = document.getElementById('timer');
+      te.textContent = t;
+      const btn = document.getElementById('submit-btn');
+      btn.disabled = false;
+      btn.onclick = () => showResult(ans);
+      timerInt = setInterval(() => {
+        t--;
+        te.textContent = t > 0 ? t : 0;
+        if (t <= 0) showResult(ans);
+      }, 1000);
     }
 
-    function load(i){
+    function load(i) {
       clearInterval(timerInt);
       currentIdx = i;
       markVisit(i);
@@ -89,10 +94,10 @@
       document.getElementById('result').textContent = '';
       document.getElementById('answer-input').value = '';
       document.getElementById('question').textContent = questions[i] || 'Question not found';
-      startTimer(answers[i]||'Answer not found');
+      startTimer(answers[i] || 'Answer not found');
     }
 
-    document.addEventListener('DOMContentLoaded', async ()=>{
+    document.addEventListener('DOMContentLoaded', async () => {
       await loadQA();
       renderNav();
       load(0);
@@ -100,3 +105,4 @@
   </script>
 </body>
 </html>
+
