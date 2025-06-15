@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>IvyTech Trivia Quiz</title>
+  <style>
+    body { background: #090D15; color: #E1E2EA; font-family: 'Helvetica Neue', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: top; padding: 2rem; }
+    #quiz-container { background: #1B1F3A; border: 3px solid #7FDBFF; border-radius: 12px; padding: 2rem; width: 100%; max-width: 600px; text-align: center; }
+    #question { font-size: 1.6rem; margin-bottom: 1rem; }
+    #timer { font-size: 2rem; color: #FF4136; margin: 1rem 0; }
+    #answer-input { width: 90%; padding: 0.6rem; font-size: 1rem; border-radius: 6px; border: 1px solid #ccc; margin-bottom: 1rem; }
+    #submit-btn { padding: 0.8rem 1.6rem; font-size: 1rem; border: none; border-radius: 6px; background: #FF851B; color: #fff; cursor: pointer; }
+    #result { margin-top: 1.2rem; font-size: 1.1rem; }
+    #nav-buttons { margin-top: 2rem; }
+    .nav-btn { margin: 0.25rem; padding: 0.4rem 0.8rem; border: 1px solid #7FDBFF; background: none; color: #7FDBFF; cursor: pointer; border-radius: 5px; }
+    .nav-btn.visited { background: #7FDBFF; color: #1B1F3A; }
+  </style>
+</head>
+<body>
+  <div id="quiz-container">
+    <div id="question">Loading today's trivia…</div>
+    <div id="timer">15</div>
+    <input id="answer-input" type="text" placeholder="Your answer..." autocomplete="off"/>
+    <br/>
+    <button id="submit-btn">Submit Answer</button>
+    <div id="result"></div>
+  </div>
+  <div id="nav-buttons"></div>
+
+  <script>
+    const BASE = 'https://sites.google.com/ivytech.edu/cae/home/trivia-questions';
+    const visited = new Set(JSON.parse(sessionStorage.getItem('vt')||'[]'));
+    let timerInt, currentIdx = 0;
+
+    function renderNav(){
+      const nb = document.getElementById('nav-buttons');
+      nb.innerHTML = '';
+      for(let i=0;i<=10;i++){
+        const btn = document.createElement('button');
+        btn.textContent = (i===0) ? 'Today' : i;
+        btn.className = 'nav-btn' + (visited.has(i)?' visited':'');
+        btn.onclick = ()=>load(i);
+        nb.appendChild(btn);
+      }
+    }
+
+    function markVisit(i){
+      visited.add(i);
+      sessionStorage.setItem('vt', JSON.stringify([...visited]));
+      renderNav();
+    }
+
+    async function fetchQA(i){
+      const u = (i===0) ? BASE : `${BASE}?authuser=0&pli=1&widget=true&gid=${i}`;
+      const resp = await fetch(u);
+      const t = await resp.text();
+      const doc = new DOMParser().parseFromString(t,'text/html');
+      // Find all <b>bold> elements inside the content; assume first is question, next paragraph is answer
+      const bs = Array.from(doc.querySelectorAll('b'));
+      let question = 'Question not found', answer='Answer not found';
+      if(bs.length){
+        question = bs[0].textContent.trim();
+        const p = bs[0].parentElement.nextElementSibling;
+        if(p) answer = p.textContent.trim();
+      }
+      return {question,answer};
+    }
+
+    function showResult(correct){
+      clearInterval(timerInt);
+      document.getElementById('submit-btn').disabled = true;
+      const ua = document.getElementById('answer-input').value.trim()||'<No answer>';
+      document.getElementById('result').innerHTML = `<strong>Your:</strong> ${ua}<br/><strong>Correct:</strong> ${correct}`;
+    }
+
+    function startTimer(ans){
+      let t=15;
+      const te = document.getElementById('timer');
+      te.textContent = t;
+      document.getElementById('submit-btn').disabled=false;
+      document.getElementById('submit-btn').onclick = ()=>showResult(ans);
+      timerInt = setInterval(()=>{
+        t--;
+        te.textContent = t>0? t:0;
+        if(t<=0) showResult(ans);
+      },1000);
+    }
+
+    async function load(i){
+      clearInterval(timerInt);
+      currentIdx=i;
+      markVisit(i);
+      document.getElementById('result').textContent = '';
+      document.getElementById('answer-input').value='';
+      const qa = await fetchQA(i);
+      document.getElementById('question').textContent = qa.question;
+      startTimer(qa.answer);
+    }
+
+    document.addEventListener('DOMContentLoaded',()=>{
+      renderNav();
+      load(0);
+    });
+  </script>
+</body>
+</html>
